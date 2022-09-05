@@ -251,7 +251,7 @@ class Searcher():
 
   def negamax(self, position : Position, depth, verbose=False):
     max = -MATE_UPPER
-    for move in position.gen_moves():
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       score = position.value(move)
       if depth != 1:
         score -= self.negamax(position.move(move), depth - 1, verbose)
@@ -264,7 +264,7 @@ class Searcher():
     max = -MATE_UPPER
     best_move = None
     iter = 0
-    for move in position.gen_moves():
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       iter += 1
       score = position.value(move)
       if depth != 1: 
