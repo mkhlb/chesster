@@ -116,25 +116,33 @@ def main():
         if param == 'btime':
           opp_time = int(val)
       
+      print(depth)
+        
+      
+      
       moves_remain = 40
 
       start = time.time()
 
-      logging.debug('generate moves')
+      # logging.debug('generate moves')
       
-      moves = pos.gen_moves()
+      # moves = pos.gen_moves()
 
-      movelist = list(moves)
+      # movelist = list(moves)
 
-      logging.debug('finish generate moves')
+      # logging.debug('finish generate moves')
 
-      logging.debug(movelist)
+      # logging.debug(movelist)
 
-      move = random.choice(movelist)
+      # move = random.choice(movelist)
 
-      logging.debug(move)
+      # logging.debug(move)
 
-      output('bestmove ' + utils.mrender(pos, move))
+      move = searcher.search(pos, depth)
+
+      logging.debug(move[1])
+
+      output('bestmove ' + utils.mrender(pos, move[0]))
 
     elif smove.startswith('time'):
             our_time = int(smove.split()[1])

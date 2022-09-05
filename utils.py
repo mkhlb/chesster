@@ -13,6 +13,11 @@ WHITE, BLACK = range(2)
 
 FEN_INITIAL = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
+def can_kill_king(pos):
+  # If we just checked for opponent moves capturing the king, we would miss
+  # captures in case of illegal castling.
+  return any(pos.value(m) >= chesster.MATE_LOWER for m in pos.gen_moves())
+
 ################################################################################
 # Parse and Render positions
 ################################################################################

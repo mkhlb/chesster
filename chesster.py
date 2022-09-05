@@ -5,6 +5,8 @@ from tracemalloc import start
 
 from loggering import *
 
+import utils
+
 
 
 #------------------------------------------------------------
@@ -12,6 +14,70 @@ from loggering import *
 #------------------------------------------------------------
 
 piece = { 'P': 100, 'N': 300, 'B': 300, 'R': 400, 'Q': 900, 'K':30000}
+
+piece_square_tables = {
+  'P' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
+          000, 000, 000, 000, 000, 000, 000, 000, #7
+          000, 000, 000, 000, 000, 000, 000, 000, #6
+          000, 000, 000, 000, 000, 000, 000, 000, #5
+          000, 000, 000, 000, 000, 000, 000, 000, #4
+          000, 000, 000, 000, 000, 000, 000, 000, #3
+          000, 000, 000, 000, 000, 000, 000, 000, #2
+          000, 000, 000, 000, 000, 000, 000, 000),#1
+#          A    B    C    D    E    F    G    H
+  'B' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
+          000, 000, 000, 000, 000, 000, 000, 000, #7
+          000, 000, 000, 000, 000, 000, 000, 000, #6
+          000, 000, 000, 000, 000, 000, 000, 000, #5
+          000, 000, 000, 000, 000, 000, 000, 000, #4
+          000, 000, 000, 000, 000, 000, 000, 000, #3
+          000, 000, 000, 000, 000, 000, 000, 000, #2
+          000, 000, 000, 000, 000, 000, 000, 000),#1
+#          A    B    C    D    E    F    G    H
+  'R' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
+          000, 000, 000, 000, 000, 000, 000, 000, #7
+          000, 000, 000, 000, 000, 000, 000, 000, #6
+          000, 000, 000, 000, 000, 000, 000, 000, #5
+          000, 000, 000, 000, 000, 000, 000, 000, #4
+          000, 000, 000, 000, 000, 000, 000, 000, #3
+          000, 000, 000, 000, 000, 000, 000, 000, #2
+          000, 000, 000, 000, 000, 000, 000, 000),#1
+#          A    B    C    D    E    F    G    H
+  'N' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
+          000, 000, 000, 000, 000, 000, 000, 000, #7
+          000, 000, 000, 000, 000, 000, 000, 000, #6
+          000, 000, 000, 000, 000, 000, 000, 000, #5
+          000, 000, 000, 000, 000, 000, 000, 000, #4
+          000, 000, 000, 000, 000, 000, 000, 000, #3
+          000, 000, 000, 000, 000, 000, 000, 000, #2
+          000, 000, 000, 000, 000, 000, 000, 000),#1
+#          A    B    C    D    E    F    G    H
+  'Q' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
+          000, 000, 000, 000, 000, 000, 000, 000, #7
+          000, 000, 000, 000, 000, 000, 000, 000, #6
+          000, 000, 000, 000, 000, 000, 000, 000, #5
+          000, 000, 000, 000, 000, 000, 000, 000, #4
+          000, 000, 000, 000, 000, 000, 000, 000, #3
+          000, 000, 000, 000, 000, 000, 000, 000, #2
+          000, 000, 000, 000, 000, 000, 000, 000),#1
+#          A    B    C    D    E    F    G    H
+  'K' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
+          000, 000, 000, 000, 000, 000, 000, 000, #7
+          000, 000, 000, 000, 000, 000, 000, 000, #6
+          000, 000, 000, 000, 000, 000, 000, 000, #5
+          000, 000, 000, 000, 000, 000, 000, 000, #4
+          000, 000, 000, 000, 000, 000, 000, 000, #3
+          000, 000, 000, 000, 000, 000, 000, 000, #2
+          000, 000, 000, 000, 000, 000, 000, 000) #1
+#          A    B    C    D    E    F    G    H
+}
+
+# pad tables and add material value to pst dicts
+for k, table in piece_square_tables.items():
+  padrow = lambda row: (0,) + tuple(x+piece[k] for x in row) + (0,)
+  piece_square_tables[k] = sum((padrow(table[i*8:i*8+8]) for i in range(8)), ())
+  piece_square_tables[k] = (0,)*20 + piece_square_tables[k] + (0,)*20
+
 
 
 #------------------------------------------------------------
@@ -26,6 +92,8 @@ initial = (
   '         \n'
   ' rnbqkbnr\n'
   ' pppppppp\n'
+  ' ........\n'
+  ' ........\n'
   ' ........\n'
   ' ........\n'
   ' PPPPPPPP\n'
@@ -59,7 +127,7 @@ MATE_UPPER = piece['K'] + 10*piece['Q']
 #------------------------------------------------------------
 
 class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant')):
-  def gen_moves(self):
+  def gen_moves(self): #returns moves in format (start pos, end pos)
     # for i, p in enumerate(self.board):
     #   if not p.isupper(): continue
     #   for d in directions[p]:
@@ -80,31 +148,24 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
     #         if i == A1 and self.board[j+E] == 'K' and self.wc[0]: yield (j+E, j+W)
     #         if i == H1 and self.board[j+W] == 'K' and self.wc[1]: yield (j+W, j+E)
     # For each piece, iterate through their directions and break based on captures or instantly for knights and pawns
-    logging.debug('boutta enum')
     for start_pos, piece in enumerate(self.board):
-      logging.debug('getting enumerating')
       if not piece.isupper(): continue
       for direction in directions[piece]:
         for end_pos in count(start_pos + direction, direction):
-          logging.debug('getting scrunkly')
           end_space = self.board[end_pos]
           # Stay inside board and off friends
           if end_space.isspace() or end_space.isupper(): break
-          logging.debug('getting scrunkly wit da pawn')
           # Pawn move double move and capture
           if piece == 'P' and direction in (N, N+N) and end_space != '.': break
           if piece == 'P' and direction == N+N and (start_pos < A1 + N or self.board[start_pos + N] != '.'): break
           if piece == 'P' and direction in (N+E, N+W) and end_space == '.' and end_pos not in (self.en_passant, self.king_passant, self.king_passant-1, self.king_passant+1): break
-          logging.debug('getting scrunkly wit da yield')
           # Yield move to generator
           yield (start_pos, end_pos)
-          logging.debug('getting scrunkly wit da not a flyer')
           # Stop moves that only move once from flying
           if piece in 'PNK' or end_space.islower(): break
-          logging.debug('getting scrunkly wit da castle')
           # Castling, detected by rook movements, executed by moving king
-          if start_pos == A1 and self.board[end_pos + E] == 'K' and self.white_castle[0]: yield (end_pos+E, end_pos+W)
-          if start_pos == H1 and self.board[end_pos + W] == 'K' and self.white_castle[1]: yield (end_pos+W, end_pos+E)
+          if start_pos == A1 and self.board[end_pos + E] == 'K' and self.white_castle[0] and self.board[end_pos + W] == '.': yield (end_pos+E, end_pos+W)
+          if start_pos == H1 and self.board[end_pos + W] == 'K' and self.white_castle[1] and self.board[end_pos + E] == '.': yield (end_pos+W, end_pos+E)
 
   def rotate(self):
     ''' flips board, maintains enpassant '''
@@ -115,14 +176,13 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
     )
 
   def nullmove(self):
-    ''' Like rotate, but cleark passant '''
+    ''' Like rotate, but clear passant '''
     return Position(
       self.board[::-1].swapcase(), -self.score,
       self.black_castle, self.white_castle, 0, 0
     )
 
   def move(self, move):
-    logging.debug('moving!')
     start_pos, end_pos = move
     piece, capture = self.board[start_pos], self.board[end_pos]
     put = lambda board, start_pos, piece: board[:start_pos] + piece + board[start_pos+1:]
@@ -162,13 +222,58 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
     start_pos, end_pos = move
     piece, capture = self.board[start_pos], self.board[end_pos]
     # Actual move
+    score = piece_square_tables[piece][end_pos] - piece_square_tables[piece][start_pos]
     # WHEN IMPLEMENTED TABLES FOR POSITIONS DO THAT HERE
     # Capture
+    if capture.islower():
+      score += piece_square_tables[capture.upper()][119-end_pos]
     # Castling
-    return 0
+    if piece == 'K' and abs(start_pos-end_pos) == 2:
+      score += piece_square_tables['R'][(start_pos+end_pos)//2]
+      score -= piece_square_tables['R'][A1 if end_pos < start_pos else H1]
+    
+    if piece == 'P':
+      if A8 <= end_pos <= H8:
+        score += piece_square_tables['Q'][end_pos] - piece_square_tables['P'][end_pos]
+      if end_pos == self.en_passant:
+        score += piece_square_tables['P'][119-(end_pos + S)]
+
+    return score
 
 class Searcher():
-  pass
+  def __init__(self):
+    self.top_score = {}
+    self.top_move = {} # key: position object, object is tuple (move object (from pos.gen_moves()), )
+    self.history = set()
+
+  def depth_one_best_move(self, position):
+    pass
+
+  def negamax(self, position : Position, depth, verbose=False):
+    max = -MATE_UPPER
+    for move in position.gen_moves():
+      score = position.value(move)
+      if depth != 1:
+        score -= self.negamax(position.move(move), depth - 1, verbose)
+      if score > max:
+        max = score
+    return max
+
+
+  def search(self, position : Position, depth):
+    max = -MATE_UPPER
+    best_move = None
+    iter = 0
+    for move in position.gen_moves():
+      iter += 1
+      score = position.value(move)
+      if depth != 1: 
+        verbose = True
+        score -= self.negamax(position.move(move), depth - 1, verbose)
+      if score > max:
+        max = score
+        best_move = move
+    return best_move, max
 
 
 def parse(c):
