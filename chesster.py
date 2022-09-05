@@ -275,6 +275,24 @@ class Searcher():
         best_move = move
     return best_move, max
 
+  def alpha_beta(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=-MATE_UPPER, depth=8):
+    if root:
+      best_move = None
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      score = position.value(move)
+      if depth > 1:
+        score = -self.alpha_beta(position.move(move), False, -beta, -alpha, depth - 1)
+      if score >= beta:
+        if root: return move, beta
+        return beta
+      if score > alpha:
+        alpha = score
+        if root: best_move = move
+    if root: return best_move, alpha
+    return alpha
+    
+
+
 
 def parse(c):
   fil, rank = ord(c[0]) - ord('a'), int(c[1]) - 1

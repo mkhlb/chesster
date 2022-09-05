@@ -137,8 +137,17 @@ def main():
       # move = random.choice(movelist)
 
       # logging.debug(move)
+      before = time.perf_counter()
+      move = searcher.alpha_beta(pos, True, depth=depth)
+      after = time.perf_counter()
 
-      move = searcher.search(pos, depth)
+      # print('did alpha-beta in {} seconds'.format(after - before))
+
+      # before = time.perf_counter()
+      # move = searcher.search(pos, depth)
+      # after = time.perf_counter()
+
+      # print('did minimax in {} seconds'.format(after - before))
 
       logging.debug(move[1])
 
