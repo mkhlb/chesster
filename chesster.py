@@ -21,8 +21,8 @@ piece_square_tables = {
           000, 000, 000, 000, 000, 000, 000, 000, #6
           000, 000, 000, 000, 000, 000, 000, 000, #5
           000, 000, 000, 000, 000, 000, 000, 000, #4
-          000, 000, 000, 000, 000, 000, 000, 000, #3
-          000, 000, 000, 000, 000, 000, 000, 000, #2
+          000, 000, 000, 000, 000, -10,  -5,   5, #3
+          000, 000,  10, -25, -25,  10,  10,   5, #2
           000, 000, 000, 000, 000, 000, 000, 000),#1
 #          A    B    C    D    E    F    G    H
   'B' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
@@ -251,12 +251,15 @@ class Searcher():
 
   def negamax(self, position : Position, depth, verbose=False):
     max = -MATE_UPPER
+    logging.debug('depth {} considering {}'.format(depth, position.board))
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      if verbose: logging.debug(position.move(move).rotate().board)
       score = position.value(move)
       if depth != 1:
         score -= self.negamax(position.move(move), depth - 1, verbose)
       if score > max:
         max = score
+        if verbose: logging.debug(score)
     return max
 
 
@@ -268,20 +271,20 @@ class Searcher():
       iter += 1
       score = position.value(move)
       if depth != 1: 
-        verbose = True
+        verbose = False
         score -= self.negamax(position.move(move), depth - 1, verbose)
       if score > max:
         max = score
         best_move = move
     return best_move, max
 
-  def alpha_beta(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=-MATE_UPPER, depth=8):
+  def alpha_beta(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
     if root:
       best_move = None
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       score = position.value(move)
       if depth > 1:
-        score = -self.alpha_beta(position.move(move), False, -beta, -alpha, depth - 1)
+        score -= self.alpha_beta(position.move(move), False, -beta, -alpha, depth - 1)
       if score >= beta:
         if root: return move, beta
         return beta
@@ -290,6 +293,42 @@ class Searcher():
         if root: best_move = move
     if root: return best_move, alpha
     return alpha
+
+  def alpha_beta2(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
+    if root:
+      best_move = None
+    if depth == 0:
+      return self.quiesce(position, alpha, beta)
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      score = -self.alpha_beta2(position.move(move), False, -beta, -alpha, depth - 1)
+      if score >= beta:
+        if root: return move, beta
+        return beta
+      if score > alpha:
+        alpha = score
+        if root: best_move = move
+    if root: return best_move, alpha
+    return alpha
+
+  def quiesce(self, position : Position, alpha, beta):
+    logging.debug(position.board)
+    stand_pat = position.score
+    if stand_pat >= beta:
+      return beta
+    if alpha < stand_pat:
+      alpha = stand_pat
+    
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      if not position.board[move[1]].islower():
+        continue
+      score = -self.quiesce(position.move(move), -beta, -alpha)
+
+      if score >= beta:
+        return beta
+      if score > alpha:
+        alpha = score
+    return alpha
+
     
 
 

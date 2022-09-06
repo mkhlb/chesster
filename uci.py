@@ -115,8 +115,6 @@ def main():
           our_time = int(val)
         if param == 'btime':
           opp_time = int(val)
-      
-      print(depth)
         
       
       
@@ -138,10 +136,12 @@ def main():
 
       # logging.debug(move)
       before = time.perf_counter()
-      move = searcher.alpha_beta(pos, True, depth=depth)
+      move = searcher.alpha_beta2(pos, True, depth=depth)
       after = time.perf_counter()
 
-      # print('did alpha-beta in {} seconds'.format(after - before))
+      print('did alpha-beta in {} seconds'.format(after - before))
+
+      output('bestmove ' + utils.mrender(pos, move[0]))
 
       # before = time.perf_counter()
       # move = searcher.search(pos, depth)
@@ -149,9 +149,9 @@ def main():
 
       # print('did minimax in {} seconds'.format(after - before))
 
-      logging.debug(move[1])
+      # logging.debug(move[1])
 
-      output('bestmove ' + utils.mrender(pos, move[0]))
+      # output('bestmove ' + utils.mrender(pos, move[0]))
 
     elif smove.startswith('time'):
             our_time = int(smove.split()[1])
