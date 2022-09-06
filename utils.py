@@ -23,7 +23,6 @@ def can_kill_king(pos):
 ################################################################################
 
 def mrender(pos, m):
-  # Sunfish always assumes promotion to queen
   p = 'q' if chesster.A8 <= m[1] <= chesster.H8 and pos.board[m[0]] == 'P' else ''
   m = m if get_color(pos) == WHITE else (119-m[0], 119-m[1])
   return chesster.render(m[0]) + chesster.render(m[1]) + p
@@ -33,7 +32,7 @@ def mparse(color, move):
   return m if color == WHITE else (119-m[0], 119-m[1])
 
 def get_color(pos):
-  ''' A slightly hacky way to to get the color from a sunfish position '''
+  ''' A slightly hacky way to to get the color from a chesster position '''
   return BLACK if pos.board.startswith('\n') else WHITE
 
 def parseFEN(fen):

@@ -29,7 +29,7 @@ def main():
     chesster.pst = pst_module.pst
 
   
-  pos = utils.parseFEN
+  pos = utils.parseFEN(utils.FEN_INITIAL)
   searcher=chesster.Searcher()
   our_time, opp_time = 1000, 1000
   show_thinking = True
@@ -138,6 +138,10 @@ def main():
       before = time.perf_counter()
       move = searcher.alpha_beta2(pos, True, depth=depth)
       after = time.perf_counter()
+
+      logging.debug(pos.en_passant)
+
+      logging.debug(pos.move(move[0]).rotate().board)
 
       print('did alpha-beta in {} seconds'.format(after - before))
 

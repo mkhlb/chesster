@@ -88,18 +88,18 @@ for k, table in piece_square_tables.items():
 # Having each line 10 long allows easy up and down by adding or subtracting 10 from index
 A1, H1, A8, H8 = 91, 98, 21, 28
 initial = (
-  '         \n'
-  '         \n'
-  ' rnbqkbnr\n'
-  ' pppppppp\n'
-  ' ........\n'
-  ' ........\n'
-  ' ........\n'
-  ' ........\n'
-  ' PPPPPPPP\n'
-  ' RNBQKBNR\n'
-  '         \n'
-  '         \n'
+  '         \n'  #   0 -  9
+  '         \n'  #  10 - 19
+  ' rnbqkbnr\n'  #  20 - 29
+  ' pppppppp\n'  #  30 - 39
+  ' ........\n'  #  40 - 49
+  ' ........\n'  #  50 - 59
+  ' ........\n'  #  60 - 69
+  ' ........\n'  #  70 - 79
+  ' PPPPPPPP\n'  #  80 - 89
+  ' RNBQKBNR\n'  #  90 - 99
+  '         \n'  # 100 -109
+  '         \n'  # 110 -119
 )
 
 # Compass directions as relative indexes in string
@@ -128,44 +128,44 @@ MATE_UPPER = piece['K'] + 10*piece['Q']
 
 class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant')):
   def gen_moves(self): #returns moves in format (start pos, end pos)
-    # for i, p in enumerate(self.board):
-    #   if not p.isupper(): continue
-    #   for d in directions[p]:
-    #     for j in count(i+d, d):
-    #         q = self.board[j]
-    #         # Stay inside the board, and off friendly pieces
-    #         if q.isspace() or q.isupper(): break
-    #         # Pawn move, double move and capture
-    #         if p == 'P' and d in (N, N+N) and q != '.': break
-    #         if p == 'P' and d == N+N and (i < A1+N or self.board[i+N] != '.'): break
-    #         if p == 'P' and d in (N+W, N+E) and q == '.' \
-    #             and j not in (self.ep, self.kp, self.kp-1, self.kp+1): break
-    #         # Move it
-    #         yield (i, j)
-    #         # Stop crawlers from sliding, and sliding after captures
-    #         if p in 'PNK' or q.islower(): break
-    #         # Castling, by sliding the rook next to the king
-    #         if i == A1 and self.board[j+E] == 'K' and self.wc[0]: yield (j+E, j+W)
-    #         if i == H1 and self.board[j+W] == 'K' and self.wc[1]: yield (j+W, j+E)
+    for i, p in enumerate(self.board):
+      if not p.isupper(): continue
+      for d in directions[p]:
+        for j in count(i+d, d):
+            q = self.board[j]
+            # Stay inside the board, and off friendly pieces
+            if q.isspace() or q.isupper(): break
+            # Pawn move, double move and capture
+            if p == 'P' and d in (N, N+N) and q != '.': break
+            if p == 'P' and d == N+N and (i < A1+N or self.board[i+N] != '.'): break
+            if p == 'P' and d in (N+W, N+E) and q == '.' \
+                and j not in (self.en_passant, self.king_passant, self.king_passant-1, self.king_passant+1): break
+            # Move it
+            yield (i, j)
+            # Stop crawlers from sliding, and sliding after captures
+            if p in 'PNK' or q.islower(): break
+            # Castling, by sliding the rook next to the king
+            if i == A1 and self.board[j+E] == 'K' and self.white_castle[0]: yield (j+E, j+W)
+            if i == H1 and self.board[j+W] == 'K' and self.white_castle[1]: yield (j+W, j+E)
     # For each piece, iterate through their directions and break based on captures or instantly for knights and pawns
-    for start_pos, piece in enumerate(self.board):
-      if not piece.isupper(): continue
-      for direction in directions[piece]:
-        for end_pos in count(start_pos + direction, direction):
-          end_space = self.board[end_pos]
-          # Stay inside board and off friends
-          if end_space.isspace() or end_space.isupper(): break
-          # Pawn move double move and capture
-          if piece == 'P' and direction in (N, N+N) and end_space != '.': break
-          if piece == 'P' and direction == N+N and (start_pos < A1 + N or self.board[start_pos + N] != '.'): break
-          if piece == 'P' and direction in (N+E, N+W) and end_space == '.' and end_pos not in (self.en_passant, self.king_passant, self.king_passant-1, self.king_passant+1): break
-          # Yield move to generator
-          yield (start_pos, end_pos)
-          # Stop moves that only move once from flying
-          if piece in 'PNK' or end_space.islower(): break
-          # Castling, detected by rook movements, executed by moving king
-          if start_pos == A1 and self.board[end_pos + E] == 'K' and self.white_castle[0] and self.board[end_pos + W] == '.': yield (end_pos+E, end_pos+W)
-          if start_pos == H1 and self.board[end_pos + W] == 'K' and self.white_castle[1] and self.board[end_pos + E] == '.': yield (end_pos+W, end_pos+E)
+    # for start_pos, piece in enumerate(self.board):
+    #   if not piece.isupper(): continue
+    #   for direction in directions[piece]:
+    #     for end_pos in count(start_pos + direction, direction):
+    #       end_space = self.board[end_pos]
+    #       # Stay inside board and off friends
+    #       if end_space.isspace() or end_space.isupper(): break
+    #       # Pawn move double move and capture
+    #       if piece == 'P' and direction in (N, N+N) and end_space != '.': break
+    #       if piece == 'P' and direction == N+N and (start_pos < A1 + N or self.board[start_pos + N] != '.'): break
+    #       if piece == 'P' and direction in (N+E, N+W) and end_space == '.' and end_pos not in (self.en_passant, self.king_passant, self.king_passant-1, self.king_passant+1): break
+    #       # Yield move to generator
+    #       yield (start_pos, end_pos)
+    #       # Stop moves that only move once from flying
+    #       if piece in 'PNK' or end_space.islower(): break
+    #       # Castling, detected by rook movements, executed by moving king
+    #       if start_pos == A1 and self.board[end_pos + E] == 'K' and self.white_castle[0] and self.board[end_pos + W] == '.': yield (end_pos+E, end_pos+W)
+    #       if start_pos == H1 and self.board[end_pos + W] == 'K' and self.white_castle[1] and self.board[end_pos + E] == '.': yield (end_pos+W, end_pos+E)
 
   def rotate(self):
     ''' flips board, maintains enpassant '''
@@ -189,7 +189,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
     
     # Copy variables and reset ep and kp
     board = self.board
-    white_castle, black_castle, en_passant, king_passant = self.white_castle, self.black_castle, self.en_passant, self.king_passant
+    white_castle, black_castle, en_passant, king_passant = self.white_castle, self.black_castle, 0, 0
     score = self.score + self.value(move)
     
     # Update board
@@ -311,7 +311,6 @@ class Searcher():
     return alpha
 
   def quiesce(self, position : Position, alpha, beta):
-    logging.debug(position.board)
     stand_pat = position.score
     if stand_pat >= beta:
       return beta
