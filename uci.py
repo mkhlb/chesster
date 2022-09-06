@@ -8,7 +8,10 @@ import time
 import logging
 import argparse
 
+import requests
+
 import random
+from urllib.parse import urljoin
 
 import utils
 import chesster
@@ -16,6 +19,16 @@ import chesster
 from loggering import *
 
 from utils import WHITE, BLACK, Unbuffered
+
+def send_chat(game_id, message, room):
+  url = "https://lichess.org/"
+  endpoint = "/api/bot/game/{}/chat"
+  header = {
+    "Authorization": f"Bearer lip_lEBfFRyeKPZz2naVFbMP"
+  }
+  payload = {'room': room, 'text': message}
+  url = urljoin(url, endpoint.format(game_id))
+  response = requests.post(url, headers=header, data=payload)
 
 def main():
   parser = argparse.ArgumentParser()
@@ -35,6 +48,8 @@ def main():
   show_thinking = True
 
   stack = []
+
+  game_id = None
   while True:
     if stack:
       smove = stack.pop()
@@ -58,6 +73,9 @@ def main():
 
     # UCI syntax:
     # position [fen  | startpos ]  moves ....
+
+    elif smove.startswith('game_id'):
+      game_id = smove.split(' ')[1]
 
     elif smove.startswith('position'):
       logging.debug('started parsing pos')
@@ -143,7 +161,13 @@ def main():
 
       logging.debug(pos.move(move[0]).rotate().board)
 
-      print('did alpha-beta in {} seconds'.format(after - before))
+      if game_id:
+        for msg in move[2]:
+          send_chat(game_id, msg, 'player')
+
+      # print('did alpha-beta in {} seconds'.format(after - before))
+
+      output('info teehee')
 
       output('bestmove ' + utils.mrender(pos, move[0]))
 

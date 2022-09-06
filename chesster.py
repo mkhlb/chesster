@@ -13,7 +13,7 @@ import utils
 # PIECE VALUES
 #------------------------------------------------------------
 
-piece = { 'P': 100, 'N': 300, 'B': 300, 'R': 400, 'Q': 900, 'K':30000}
+piece = { 'P': 100, 'N': 280, 'B': 320, 'R': 400, 'Q': 900, 'K':30000}
 
 piece_square_tables = {
   'P' : ( 000, 000, 000, 000, 000, 000, 000, 000, #8
@@ -300,14 +300,16 @@ class Searcher():
     if depth == 0:
       return self.quiesce(position, alpha, beta)
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      score = -self.alpha_beta2(position.move(move), False, -beta, -alpha, depth - 1)
+      if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+        score = -position.move(move).score
+      else: score = -self.alpha_beta2(position.move(move), False, -beta, -alpha, depth - 1)
       if score >= beta:
-        if root: return move, beta
+        if root: return move, beta, ('test',)
         return beta
       if score > alpha:
         alpha = score
         if root: best_move = move
-    if root: return best_move, alpha
+    if root: return best_move, alpha, ('test',)
     return alpha
 
   def quiesce(self, position : Position, alpha, beta):
@@ -320,7 +322,8 @@ class Searcher():
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       if not position.board[move[1]].islower():
         continue
-      score = -self.quiesce(position.move(move), -beta, -alpha)
+      if position.board[move[1]] == 'k': score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+      else: score = -self.quiesce(position.move(move), -beta, -alpha)
 
       if score >= beta:
         return beta
