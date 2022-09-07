@@ -154,6 +154,8 @@ def main():
 
       # logging.debug(move)
       before = time.perf_counter()
+      if our_time < 180000: #5 mins
+        depth -= 1
       move = searcher.alpha_beta2(pos, True, depth=depth)
       after = time.perf_counter()
 

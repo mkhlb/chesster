@@ -301,15 +301,16 @@ class Searcher():
       return self.quiesce(position, alpha, beta)
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+        logging.debug('taking k with ' + position.board[move[0]])
         score = -position.move(move).score
       else: score = -self.alpha_beta2(position.move(move), False, -beta, -alpha, depth - 1)
       if score >= beta:
-        if root: return move, beta, ('test',)
+        if root: return move, beta, ()
         return beta
       if score > alpha:
         alpha = score
         if root: best_move = move
-    if root: return best_move, alpha, ('test',)
+    if root: return best_move, alpha, ()
     return alpha
 
   def quiesce(self, position : Position, alpha, beta):
@@ -322,7 +323,8 @@ class Searcher():
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       if not position.board[move[1]].islower():
         continue
-      if position.board[move[1]] == 'k': score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+      if position.board[move[1]] == 'k': 
+        score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
       else: score = -self.quiesce(position.move(move), -beta, -alpha)
 
       if score >= beta:
