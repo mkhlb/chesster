@@ -171,7 +171,10 @@ def main():
 
       output('info teehee')
 
-      output('bestmove ' + utils.mrender(pos, move[0]))
+      if move[1] < chesster.MATE_LOWER:
+        output('resign')
+      else:
+        output('bestmove ' + utils.mrender(pos, move[0]))
 
       # before = time.perf_counter()
       # move = searcher.search(pos, depth)
