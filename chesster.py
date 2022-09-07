@@ -211,7 +211,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
     
     # Pawn promotion, double move, and en passant
     if piece == 'P':
-      if A8 <= end_pos <= H8: put(board, end_pos, 'Q')
+      if A8 <= end_pos <= H8: board = put(board, end_pos, 'Q')
       if end_pos - start_pos == N+N: en_passant = start_pos + N
       if end_pos == self.en_passant: board = put(board, end_pos + S, '.')
     
