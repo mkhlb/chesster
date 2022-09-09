@@ -15,10 +15,15 @@ from urllib.parse import urljoin
 
 import utils
 import chesster
+import quips
 
 from loggering import *
 
 from utils import WHITE, BLACK, Unbuffered
+
+profane = False
+
+
 
 def send_chat(game_id, message, room):
   url = "https://lichess.org/"
@@ -29,6 +34,16 @@ def send_chat(game_id, message, room):
   payload = {'room': room, 'text': message}
   url = urljoin(url, endpoint.format(game_id))
   response = requests.post(url, headers=header, data=payload)
+  #print(message)
+
+def resign(game_id):
+  url = "https://lichess.org/"
+  endpoint = "/api/bot/game/{}/resign"
+  header = {
+    "Authorization": f"Bearer lip_lEBfFRyeKPZz2naVFbMP"
+  }
+  url = urljoin(url, endpoint.format(game_id))
+  response = requests.post(url, headers=header)
 
 def main():
   parser = argparse.ArgumentParser()
@@ -50,6 +65,20 @@ def main():
   stack = []
 
   game_id = None
+
+  estimated_score = None
+
+  openers = None
+  after_my_move = None
+  take_piece = None
+  take_piece_specific = None
+  up_in_score = None
+  after_opponent_move = None
+  lose_piece_good = None
+  lose_piece_bad = None
+  lose_piece_specific = None
+  lose_to_piece = None
+
   while True:
     if stack:
       smove = stack.pop()
@@ -64,18 +93,50 @@ def main():
       output('id name Chesster')
       output('id author Mikhael BenZvi')
       output('uciok')
+      if profane:
+        openers = quips.openers_mickey, quips.openers_profane
+        after_my_move = quips.after_my_move_mickey, quips.after_my_move_profane
+        take_piece = quips.take_piece_mickey, quips.take_piece_profane
+        take_piece_specific = quips.take_piece_specific_mickey, quips.take_piece_specific_profane
+        up_in_score = (quips.up_in_score,)
+        after_opponent_move = (quips.after_opponent_move,)
+        lose_piece_good = quips.lose_piece_good_mickey, quips.lose_piece_good_profane
+        lose_piece_bad = quips.lose_piece_bad_mickey, quips.lose_piece_bad_profane
+        lose_piece_specific = quips.lose_piece_specific_mickey, quips.lose_piece_specific_profane
+        lose_to_piece = (quips.lose_to_piece,)
+      else:
+        openers = (quips.openers_mickey,)
+        after_my_move = (quips.after_my_move_mickey,)
+        take_piece = (quips.take_piece_mickey,)
+        take_piece_specific = (quips.take_piece_specific_mickey,)
+        up_in_score = (quips.up_in_score,)
+        after_opponent_move = (quips.after_opponent_move,)
+        lose_piece_good = (quips.lose_piece_good_mickey,)
+        lose_piece_bad = (quips.lose_piece_bad_mickey,)
+        lose_piece_specific = (quips.lose_piece_specific_mickey,)
+        lose_to_piece = (quips.lose_to_piece,)
 
     elif smove == 'isready':
       output('readyok')
 
     elif smove == 'ucinewgame':
+      print('test')
       stack.append('position fen ' + utils.FEN_INITIAL)
-
     # UCI syntax:
     # position [fen  | startpos ]  moves ....
 
     elif smove.startswith('game_id'):
+      
       game_id = smove.split(' ')[1]
+      #get list of all opener quips
+      opener_quips = ()
+      for opener_quips_lists in openers:
+        opener_quips = opener_quips + opener_quips_lists
+      quip = random.choice(opener_quips)
+      
+      send_chat(game_id, quip, 'player')
+      send_chat(game_id, quip, 'spectator')
+      #print(quip)
 
     elif smove.startswith('position'):
       logging.debug('started parsing pos')
@@ -107,13 +168,39 @@ def main():
       color = WHITE if fen.split()[1] == 'w' else BLACK
 
       
-
+      last_move = None
+      last_position = None
       for move in moveslist:
         parse = utils.mparse(color, move)
-        logging.debug(parse)
+        last_move = parse
+        last_position = pos
         pos = pos.move(parse)
-        logging.debug('done parsing pos')
         color = 1 - color
+
+      if last_move and game_id:
+        #funny quip time!
+        opp_move_quips = ()
+        for quip_list in after_opponent_move:
+          opp_move_quips += quip_list
+        if last_position.board[last_move[1]].islower(): #opponent has taken!
+          if estimated_score and estimated_score > 0:
+            for quip_list in lose_piece_good:
+              opp_move_quips += quip_list
+          elif estimated_score:
+            for quip_list in lose_piece_bad:
+              opp_move_quips += quip_list
+          #lost a specific piece
+          for quip_dict in lose_piece_specific:
+            if last_position.board[last_move[1]].upper() in quip_dict.keys():
+              opp_move_quips += quip_dict[last_position.board[last_move[1]].upper()]
+          #lost to specific piece
+          for quip_dict in lose_to_piece:
+            if last_position.board[last_move[0]] in quip_dict.keys():
+              opp_move_quips += quip_dict[last_position.board[last_move[0]]]
+        quip = random.choice(opp_move_quips)
+        send_chat(game_id, quip, 'player')
+        send_chat(game_id, quip, 'spectator')
+            
 
       
       
@@ -159,20 +246,43 @@ def main():
       move = searcher.alpha_beta2(pos, True, depth=depth)
       after = time.perf_counter()
 
+      estimated_score = move[1]
+
       logging.debug(pos.en_passant)
 
       logging.debug(pos.move(move[0]).rotate().board)
 
+      # if game_id and move[2]:
+      #   msg = random.choice(move[2])
+      #   send_chat(game_id, msg, 'player')
+      #   send_chat(game_id, msg, 'spectator')
+      
       if game_id:
-        for msg in move[2]:
-          send_chat(game_id, msg, 'player')
+        my_move_quips = ()
+        #funny quip time!
+        for quip_list in after_my_move:
+          my_move_quips += quip_list
+        if pos.board[move[0][1]].islower():
+          #capturing a piece!
+          for quip_list in take_piece:
+            my_move_quips += quip_list
+          for quip_dict in take_piece_specific:
+            if pos.board[move[0][1]].upper() in quip_dict.keys():
+              my_move_quips += quip_dict[pos.board[move[0][1]].upper()]
+        if move[1] > 200:
+          for quip_list in up_in_score:
+            my_move_quips += quip_list
+
+        quip = random.choice(my_move_quips)
+        send_chat(game_id, quip, 'player')
+        send_chat(game_id, quip, 'spectator')
 
       # print('did alpha-beta in {} seconds'.format(after - before))
 
       output('info teehee')
 
-      if move[1] < chesster.MATE_LOWER:
-        output('resign')
+      if move[1] < -chesster.MATE_LOWER and game_id:
+        resign(game_id)
       else:
         output('bestmove ' + utils.mrender(pos, move[0]))
 
