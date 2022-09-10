@@ -94,15 +94,15 @@ def main():
       output('id author Mikhael BenZvi')
       output('uciok')
       if profane:
-        openers = quips.openers_mickey, quips.openers_profane
-        after_my_move = quips.after_my_move_mickey, quips.after_my_move_profane
-        take_piece = quips.take_piece_mickey, quips.take_piece_profane
-        take_piece_specific = quips.take_piece_specific_mickey, quips.take_piece_specific_profane
+        openers = (quips.openers_mickey, quips.openers_profane)
+        after_my_move = (quips.after_my_move_mickey, quips.after_my_move_profane)
+        take_piece = (quips.take_piece_mickey, quips.take_piece_profane)
+        take_piece_specific = (quips.take_piece_specific_mickey, quips.take_piece_specific_profane)
         up_in_score = (quips.up_in_score,)
         after_opponent_move = (quips.after_opponent_move,)
-        lose_piece_good = quips.lose_piece_good_mickey, quips.lose_piece_good_profane
-        lose_piece_bad = quips.lose_piece_bad_mickey, quips.lose_piece_bad_profane
-        lose_piece_specific = quips.lose_piece_specific_mickey, quips.lose_piece_specific_profane
+        lose_piece_good = (quips.lose_piece_good_mickey, quips.lose_piece_good_profane)
+        lose_piece_bad = (quips.lose_piece_bad_mickey, quips.lose_piece_bad_profane)
+        lose_piece_specific = (quips.lose_piece_specific_mickey, quips.lose_piece_specific_profane)
         lose_to_piece = (quips.lose_to_piece,)
       else:
         openers = (quips.openers_mickey,)
@@ -120,7 +120,6 @@ def main():
       output('readyok')
 
     elif smove == 'ucinewgame':
-      print('test')
       stack.append('position fen ' + utils.FEN_INITIAL)
     # UCI syntax:
     # position [fen  | startpos ]  moves ....
@@ -246,7 +245,7 @@ def main():
       move = searcher.alpha_beta2(pos, True, depth=depth)
       after = time.perf_counter()
 
-      estimated_score = move[1]
+      estimated_score =  move[1] - pos.score
 
       logging.debug(pos.en_passant)
 
@@ -269,7 +268,7 @@ def main():
           for quip_dict in take_piece_specific:
             if pos.board[move[0][1]].upper() in quip_dict.keys():
               my_move_quips += quip_dict[pos.board[move[0][1]].upper()]
-        if move[1] > 200:
+        if move[1] - pos.score > 200:
           for quip_list in up_in_score:
             my_move_quips += quip_list
 

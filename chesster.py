@@ -333,6 +333,58 @@ class Searcher():
         alpha = score
     return alpha
 
+Entry = namedtuple('Entry', 'lower upper')
+
+class TranspositionOptimizedSearcher():
+  def __init__(self):
+    self.transposition_score = {}
+    self.transposition_move = {} # key: position object, object is tuple (move object (from pos.gen_moves()), )
+    self.history = set()
+    self.nodes = 0
+
+  def alpha_beta(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
+    pass
+
+  def iterative_deepening_mtdf(self, position : Position, root : bool, max_depth):
+    guess = 0
+    move = None
+    for depth in range(1, max_depth):
+      lower, upper = -MATE_UPPER, MATE_UPPER
+      while True:
+        beta = guess + int(guess == lower)
+        guess = self.alpha_beta(position, True, beta - 1, beta, depth)
+        if guess < beta:
+          upper = guess
+        else:
+          lower = guess
+        if not lower < upper:
+          break
+      move = depth, self.transposition_move.get(position), self.transposition_score.get((position, depth, True)).lower
+      #if time is up: break
+    
+    return 
+      
+
+  def quiesce(self, position : Position, alpha, beta):
+    stand_pat = position.score
+    if stand_pat >= beta:
+      return beta
+    if alpha < stand_pat:
+      alpha = stand_pat
+    
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      if not position.board[move[1]].islower():
+        continue
+      if position.board[move[1]] == 'k': 
+        score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+      else: score = -self.quiesce(position.move(move), -beta, -alpha)
+
+      if score >= beta:
+        return beta
+      if score > alpha:
+        alpha = score
+    return alpha
+
     
 
 

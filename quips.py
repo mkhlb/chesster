@@ -6,14 +6,14 @@ openers_mickey = ('I looked forward in time, I saw 4e37 futures. You win none of
   )
 openers_profane = ("What's up fuckface, I'm Chesster. This will be light work.")
 
-after_my_move_mickey = ("I'm 6 moves ahead of you', 'Freelo", 'Ok wait this is kind of easy can you start trying?'
+after_my_move_mickey = ("I'm 6 moves ahead of you", "Freelo", 'Ok wait this is kind of easy can you start trying?',
   '/checkmate', '/capture queen', '/promote pawn', '/check', '/clear e', '/clear g', '/en_passant',
   'Mate in 24.', 'Mate in 2', 'Mate in 6', 'Mate in 4', 'Mate in 10', 'Mate in 7', 'Mate in 11', 'Mate in 22', 'Mate in 19')
 after_my_move_profane = ('I checkmate your mother!', 'Bitch')
 
 take_piece_mickey = (
   'Noob down.', ':]', 'HeeHeeHeeHaw!', 'Thanks.', 'Nice move!', 'Yeah okay I\'m better.', 'Ez', 'lol', 'lmao', 'ROFL', 'Get merked', 'Wow.', 'ez',
-  'too ez', 'lol mickey mouse game', 'okay now THIS is ez', 'simple', 'light work.',
+  'too ez', 'lol mickey mouse game', 'okay now THIS is ez', 'simple', 'light work.', 'Awww, for me? You didnt have to!',
   '''⠀⠀⠀⠀⠀⠀⠀⢀⡔⠋⢉⠩⡉⠛⠛⠛⠉⣉⣉⠒⠒⡦⣄⠀⠀⠀⠀⠀⠀⠀
    ⠀⠀⠀⠀⠀⠀⢀⠎⠀⠀⠠⢃⣉⣀⡀⠂⠀⠀⠄⠀⠀⠀⠀⢱⠀⠀⠀⠀⠀⠀ 
    ⠀⠀⠀⠀⠀⡰⠟⣀⢀⣒⠐⠛⡛⠳⢭⠆⠀⠤⡶⠿⠛⠂⠀⢈⠳⡀⠀⠀⠀⠀ 
@@ -31,7 +31,7 @@ take_piece_specific_mickey = {
   'Q': ("That's the most valuable piece btw", "Wait really gonna give up the queen for free okay."),
   'N': ("We take these knights.", 'That knight just saw the light'),
   'B': ("",),
-  'R': ('Read that rook like a book.')
+  'R': ('Read that rook like a book.',)
 }
 
 take_piece_specific_profane = {
