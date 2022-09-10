@@ -249,51 +249,6 @@ class Searcher():
   def depth_one_best_move(self, position):
     pass
 
-  def negamax(self, position : Position, depth, verbose=False):
-    max = -MATE_UPPER
-    logging.debug('depth {} considering {}'.format(depth, position.board))
-    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      if verbose: logging.debug(position.move(move).rotate().board)
-      score = position.value(move)
-      if depth != 1:
-        score -= self.negamax(position.move(move), depth - 1, verbose)
-      if score > max:
-        max = score
-        if verbose: logging.debug(score)
-    return max
-
-
-  def search(self, position : Position, depth):
-    max = -MATE_UPPER
-    best_move = None
-    iter = 0
-    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      iter += 1
-      score = position.value(move)
-      if depth != 1: 
-        verbose = False
-        score -= self.negamax(position.move(move), depth - 1, verbose)
-      if score > max:
-        max = score
-        best_move = move
-    return best_move, max
-
-  def alpha_beta(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
-    if root:
-      best_move = None
-    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      score = position.value(move)
-      if depth > 1:
-        score -= self.alpha_beta(position.move(move), False, -beta, -alpha, depth - 1)
-      if score >= beta:
-        if root: return move, beta
-        return beta
-      if score > alpha:
-        alpha = score
-        if root: best_move = move
-    if root: return best_move, alpha
-    return alpha
-
   def alpha_beta2(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
     if root:
       best_move = None
@@ -302,7 +257,8 @@ class Searcher():
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
         logging.debug('taking k with ' + position.board[move[0]])
-        score = -position.move(move).score
+        score = MATE_UPPER + depth # mates that take longer worth less
+        #score = -position.move(move).score
       else: score = -self.alpha_beta2(position.move(move), False, -beta, -alpha, depth - 1)
       if score >= beta:
         if root: return move, beta, ()
@@ -332,6 +288,57 @@ class Searcher():
       if score > alpha:
         alpha = score
     return alpha
+  
+  def alpha_beta3(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
+    if root:
+      best_move = None
+    if depth == 0:
+      return self.quiesce2(position, alpha, beta)
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      king_take = False
+      if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+        logging.debug('taking k with ' + position.board[move[0]])
+        score = MATE_UPPER + depth # mates that take longer worth less
+        king_take = True
+        #score = -position.move(move).score
+      else: 
+        score, mate = self.alpha_beta3(position.move(move), False, -beta, -alpha, depth - 1)
+        score = -score
+        if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+          pass
+      if score >= beta:
+        if root: return move, beta, ()
+        return beta, king_take
+      if score > alpha:
+        alpha = score
+        if root: best_move = move
+    if root: return best_move, alpha, ()
+    return alpha, False
+  
+  def quiesce2(self, position : Position, alpha, beta):
+    stand_pat = position.score
+    if stand_pat >= beta:
+      return beta, False
+    if alpha < stand_pat:
+      alpha = stand_pat
+    
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      king_take = False
+      if not position.board[move[1]].islower():
+        continue
+      if position.board[move[1]] == 'k': 
+        score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+        king_take = True
+      else: 
+        score, mate = self.quiesce2(position.move(move), -beta, -alpha)
+        score = -score
+        if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+          pass
+      if score >= beta:
+        return beta, king_take
+      if score > alpha:
+        alpha = score
+    return alpha, False
 
 Entry = namedtuple('Entry', 'lower upper')
 
