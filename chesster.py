@@ -294,6 +294,9 @@ class Searcher():
       best_move = None
     if depth == 0:
       return self.quiesce2(position, alpha, beta)
+
+    king_take_global = False
+
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       king_take = False
       if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
@@ -307,13 +310,16 @@ class Searcher():
         if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
           pass
       if score >= beta:
-        if root: return move, beta, ()
-        return beta, king_take
+        if root: best_move = move
+        king_take_global = king_take
+        alpha = beta
+        break
       if score > alpha:
         alpha = score
+        king_take_global = king_take
         if root: best_move = move
     if root: return best_move, alpha, ()
-    return alpha, False
+    return alpha, king_take_global
   
   def quiesce2(self, position : Position, alpha, beta):
     stand_pat = position.score
@@ -342,6 +348,8 @@ class Searcher():
 
 Entry = namedtuple('Entry', 'lower upper')
 
+TABLE_SIZE = 1e7
+
 class TranspositionOptimizedSearcher():
   def __init__(self):
     self.transposition_score = {}
@@ -349,8 +357,99 @@ class TranspositionOptimizedSearcher():
     self.history = set()
     self.nodes = 0
 
-  def alpha_beta(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
-    pass
+  def alpha_beta_memory(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
+    # if already searched this just use the computed score
+    entry = self.transposition_score.get((position, depth, root), Entry(-MATE_UPPER, MATE_UPPER))
+    if entry.lower >= beta and (not root or self.transposition_move.get(position) is not None):
+      return entry.lower
+    elif entry.upper <= alpha:
+      return entry.upper
+
+    if depth == 0:
+      return self.quiesce(position, alpha, beta)
+
+    best_score = -MATE_UPPER
+
+    king_take_global = False
+
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      king_take = False
+      if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+        logging.debug('taking k with ' + position.board[move[0]])
+        score = MATE_UPPER + depth # mates that take longer worth less
+        king_take = True
+        #score = -position.move(move).score
+      else: 
+        score, mate = self.alpha_beta_memory(position.move(move), False, -beta, -alpha, depth - 1)
+        score = -score
+        if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+          pass
+      if score >= beta:
+        # if root: return move, beta, ()
+        #return beta, king_take
+        if root: 
+          best_move = move
+          self.transposition_move[position] = move
+        alpha = beta
+        king_take_global = king_take
+        break
+      if score > best_score:
+        king_take_global = king_take
+        if root: 
+          best_move = move
+          self.transposition_move[position] = move
+        best_score = score
+        if score > alpha:
+          alpha = score
+    
+    if len(self.transposition_score) > TABLE_SIZE: self.transposition_score.clear()
+
+    if best_score <= alpha:
+      self.transposition_score[position, depth, root] = Entry(entry.lower, best_score)
+    if beta > best_score > alpha: # found accurate minmax, this will never occur with zero window (alpha and beta are the same)
+      self.transposition_score[position, depth, root] = Entry(best_score, best_score)
+    if best_score >= beta:
+      self.transposition_score[position, depth, root] = Entry(best_score, entry.upper)
+    
+    if root: return best_move, best_score, ()
+    return best_score, king_take_global
+
+  #alpha beta but alpha == beta
+  def alpha_beta_zero_window(self, position: Position, root: bool, gamma, depth):
+    entry = self.transposition_score.get((position, depth, root), Entry(-MATE_UPPER, MATE_UPPER))
+    if entry.lower >= gamma and (not root or self.transposition_move.get(position) is not None):
+      return entry.lower
+    elif entry.upper < gamma:
+      return entry.upper
+    
+
+    
+
+
+  def quiesce(self, position : Position, alpha, beta):
+    stand_pat = position.score
+    if stand_pat >= beta:
+      return beta, False
+    if alpha < stand_pat:
+      alpha = stand_pat
+    
+    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      king_take = False
+      if not position.board[move[1]].islower():
+        continue
+      if position.board[move[1]] == 'k': 
+        score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+        king_take = True
+      else: 
+        score, mate = self.quiesce(position.move(move), -beta, -alpha)
+        score = -score
+        if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+          pass
+      if score >= beta:
+        return beta, king_take
+      if score > alpha:
+        alpha = score
+    return alpha, False
 
   def iterative_deepening_mtdf(self, position : Position, root : bool, max_depth):
     guess = 0
@@ -370,27 +469,8 @@ class TranspositionOptimizedSearcher():
       #if time is up: break
     
     return 
-      
 
-  def quiesce(self, position : Position, alpha, beta):
-    stand_pat = position.score
-    if stand_pat >= beta:
-      return beta
-    if alpha < stand_pat:
-      alpha = stand_pat
-    
-    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      if not position.board[move[1]].islower():
-        continue
-      if position.board[move[1]] == 'k': 
-        score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
-      else: score = -self.quiesce(position.move(move), -beta, -alpha)
-
-      if score >= beta:
-        return beta
-      if score > alpha:
-        alpha = score
-    return alpha
+  
 
     
 
