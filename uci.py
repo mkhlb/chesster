@@ -29,7 +29,7 @@ def send_chat(game_id, message, room):
   url = "https://lichess.org/"
   endpoint = "/api/bot/game/{}/chat"
   header = {
-    "Authorization": f"Bearer lip_lEBfFRyeKPZz2naVFbMP"
+    "Authorization": f"Bearer lip_rYJV5qz8u7q0vqXFiAKy"
   }
   payload = {'room': room, 'text': message}
   url = urljoin(url, endpoint.format(game_id))
@@ -58,7 +58,8 @@ def main():
 
   
   pos = utils.parseFEN(utils.FEN_INITIAL)
-  searcher=chesster.Searcher()
+  # searcher=chesster.Searcher()
+  searcher=chesster.TranspositionOptimizedSearcher()
   our_time, opp_time = 1000, 1000
   show_thinking = True
 
@@ -220,10 +221,6 @@ def main():
         if param == 'btime':
           opp_time = int(val)
         
-      
-      
-      moves_remain = 40
-
       start = time.time()
 
       # logging.debug('generate moves')
@@ -240,16 +237,19 @@ def main():
 
       # logging.debug(move)
       before = time.perf_counter()
-      if our_time < 180000: #5 mins
-        depth -= 1
-      move = searcher.alpha_beta3(pos, True, depth=depth)
+      # if our_time < 180000: #5 mins
+      #   depth -= 1
+      if not our_time:
+        our_time = movetime
+        
+      move, score = searcher.iterative_deepening_mtdi(pos, True, depth, our_time / 30)
       after = time.perf_counter()
 
-      estimated_score =  move[1] - pos.score
+      estimated_score =  score - pos.score
 
       logging.debug(pos.en_passant)
 
-      logging.debug(pos.move(move[0]).rotate().board)
+      logging.debug(pos.move(move).rotate().board)
 
       # if game_id and move[2]:
       #   msg = random.choice(move[2])
@@ -261,14 +261,14 @@ def main():
         #funny quip time!
         for quip_list in after_my_move:
           my_move_quips += quip_list
-        if pos.board[move[0][1]].islower():
+        if pos.board[move[1]].islower():
           #capturing a piece!
           for quip_list in take_piece:
             my_move_quips += quip_list
           for quip_dict in take_piece_specific:
-            if pos.board[move[0][1]].upper() in quip_dict.keys():
-              my_move_quips += quip_dict[pos.board[move[0][1]].upper()]
-        if move[1] - pos.score > 200:
+            if pos.board[move[1]].upper() in quip_dict.keys():
+              my_move_quips += quip_dict[pos.board[move[1]].upper()]
+        if score - pos.score > 200:
           for quip_list in up_in_score:
             my_move_quips += quip_list
 
@@ -280,10 +280,10 @@ def main():
 
       output('info teehee')
 
-      if move[1] < -chesster.MATE_LOWER and game_id:
+      if score < -chesster.MATE_LOWER and game_id:
         resign(game_id)
       else:
-        output('bestmove ' + utils.mrender(pos, move[0]))
+        output('bestmove ' + utils.mrender(pos, move))
 
       # before = time.perf_counter()
       # move = searcher.search(pos, depth)
