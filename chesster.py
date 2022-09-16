@@ -625,6 +625,8 @@ class TranspositionOptimizedSearcher():
 
       self.alpha_beta_zero_window(position, True, lower, depth) # call to always fail high to get a move if it's out of the tp
       
+      output('info depth {} timeleft {}'.format(depth, movetime - 1000 * (time.time() - start)))
+
       #if time is up: break
       if movetime > 0 and (time.time() - start) * 1000 > movetime: break
     move = self.transposition_move.get(position)

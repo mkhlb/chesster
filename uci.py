@@ -40,7 +40,7 @@ def resign(game_id):
   url = "https://lichess.org/"
   endpoint = "/api/bot/game/{}/resign"
   header = {
-    "Authorization": f"Bearer lip_lEBfFRyeKPZz2naVFbMP"
+    "Authorization": f"Bearer lip_rYJV5qz8u7q0vqXFiAKy"
   }
   url = urljoin(url, endpoint.format(game_id))
   response = requests.post(url, headers=header)
@@ -209,7 +209,8 @@ def main():
       logging.debug(pos.board)
       depth = 1000
       movetime = -1
-      
+      fallbacktime = -1
+      our_time = None
       _, *params = smove.split(' ')
       for param, val in zip(*2*(iter(params),)):
         if param == 'depth':
@@ -220,6 +221,8 @@ def main():
           our_time = int(val)
         if param == 'btime':
           opp_time = int(val)
+        if param == 'fallbacktime':
+          fallbacktime = int(val)
         
       start = time.time()
 
@@ -239,9 +242,10 @@ def main():
       before = time.perf_counter()
       # if our_time < 180000: #5 mins
       #   depth -= 1
-      if not our_time:
-        our_time = movetime
-        
+      print(our_time == None)
+      if our_time == None:
+        our_time = fallbacktime
+
       move, score = searcher.iterative_deepening_mtdi(pos, True, depth, our_time / 30)
       after = time.perf_counter()
 
