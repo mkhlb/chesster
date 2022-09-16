@@ -327,7 +327,9 @@ class Searcher():
       return beta, False
     if alpha < stand_pat:
       alpha = stand_pat
-    
+
+    king_take_global = False
+
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       king_take = False
       if not position.board[move[1]].islower():
@@ -341,10 +343,13 @@ class Searcher():
         if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
           pass
       if score >= beta:
-        return beta, king_take
+        alpha=beta
+        king_take_global=king_take
+        break
       if score > alpha:
         alpha = score
-    return alpha, False
+        king_take_global=king_take
+    return alpha, king_take_global
 
 Entry = namedtuple('Entry', 'lower upper')
 
@@ -421,7 +426,123 @@ class TranspositionOptimizedSearcher():
       return entry.lower
     elif entry.upper < gamma:
       return entry.upper
+
+    if depth == 0:
+      return self.quiesce_zero_window(position, gamma)
+
+    best_score = -MATE_UPPER
+
+    king_take_global = False
+
+    # generator of moves to search
+    def moves():
+      killer = self.transposition_move.get(position)
+      if killer:
+        if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+          score = MATE_UPPER + depth # mates that take longer worth less
+          yield move, score, True
+        else:
+          score, mate = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1) #-(gamma - 1)
+          if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
+            pass
+          yield killer, -score, False
+      
+      for move in sorted(position.gen_moves(), key=position.value(), reverse=True):
+        if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+          score = MATE_UPPER + depth # mates that take longer worth less
+          yield move, score, True
+          #score = -position.move(move).score
+        else: 
+          score, mate = self.alpha_beta_zero_window(position.move(move), False, 1-gamma, depth - 1)
+          score = -score
+          if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+            pass
+          yield move, score, False
+      
+    best_move = None  
+    for move, score, king_take in moves():
+      best_score = max(best_score, score)
+      if best_score >= gamma:
+        #clear transposition table first
+        
+        if len(self.transposition_move) > TABLE_SIZE: self.transposition_move.clear()
+        
+        best_move = move
+        king_take_global = king_take
+        self.transposition_move[position] = move
+        
+        break
+
+    if len(self.transposition_score) > TABLE_SIZE: self.transposition_score.clear()
+
+    if best_score >= gamma:
+      self.transposition_score[position, depth, root] = Entry(best_score, entry.upper) #fail high
+    else:
+      self.transposition_score[position, depth, root] = Entry(entry.lower, best_score) #fail low
     
+    if root: return best_move, score
+    else: return score, king_take_global
+
+    
+
+
+  def quiesce_zero_window(self, position : Position, gamma):
+    entry = self.transposition_score.get((position, 0, False), Entry(-MATE_UPPER, MATE_UPPER))
+    if entry.lower >= gamma:
+      return entry.lower
+    elif entry.upper < gamma:
+      return entry.upper
+
+    best_score = -MATE_UPPER
+
+    king_take_global = False
+
+    def moves():
+      yield None, position.score
+      killer = self.transposition_move.get(position)
+      if killer and position.board[killer[1]].islower():
+        if position.board[killer[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+          score = MATE_UPPER # mates that take longer worth less
+          yield killer, score, True
+        else:
+          score, mate = self.quiesce_zero_window(position.move(killer), 1-gamma) #-(gamma - 1)
+          if mate and position.board[killer[0]] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
+            pass
+          yield killer, -score, False
+      
+      for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+        if position.board[move[1]].islower():
+          if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+            score = MATE_UPPER # mates that take longer worth less
+            yield move, score, True
+            #score = -position.move(move).score
+          else: 
+            score, mate = self.quiesce_zero_window(position.move(move), 1-gamma)
+            score = -score
+            if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+              pass
+            yield move, score, False
+    
+    for move,score,king_take in moves():
+      best_score = max(best_score, score)
+      if best_score >= gamma:
+        #clear transposition table first
+        
+        if len(self.transposition_move) > TABLE_SIZE: self.transposition_move.clear()
+        
+        king_take_global = king_take
+        self.transposition_move[position] = move
+        
+        break
+    
+    if len(self.transposition_score) > TABLE_SIZE: self.transposition_score.clear()
+
+    if best_score >= gamma:
+      self.transposition_score[position, 0, False] = Entry(best_score, entry.upper) #fail high
+    else:
+      self.transposition_score[position, 0, False] = Entry(entry.lower, best_score) #fail low
+    
+    return best_score, king_take_global
 
     
 
@@ -432,7 +553,9 @@ class TranspositionOptimizedSearcher():
       return beta, False
     if alpha < stand_pat:
       alpha = stand_pat
-    
+
+    king_take_global = False
+
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
       king_take = False
       if not position.board[move[1]].islower():
@@ -446,29 +569,59 @@ class TranspositionOptimizedSearcher():
         if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
           pass
       if score >= beta:
-        return beta, king_take
+        alpha=beta
+        king_take_global=king_take
+        break
       if score > alpha:
         alpha = score
-    return alpha, False
+        king_take_global=king_take
+    return alpha, king_take_global
 
   def iterative_deepening_mtdf(self, position : Position, root : bool, max_depth):
     guess = 0
+    move_score = None
     move = None
     for depth in range(1, max_depth):
       lower, upper = -MATE_UPPER, MATE_UPPER
       while True:
         beta = guess + int(guess == lower)
-        guess = self.alpha_beta(position, True, beta - 1, beta, depth)
+        move, guess = self.alpha_beta_zero_window(position, True, beta, depth)
         if guess < beta:
           upper = guess
         else:
           lower = guess
-        if not lower < upper:
+        if lower >= upper:
           break
-      move = depth, self.transposition_move.get(position), self.transposition_score.get((position, depth, True)).lower
+
+      self.alpha_beta_zero_window(position, True, lower, depth) # call to always fail high to get a move if it's out of the tp
+      
       #if time is up: break
-    
-    return 
+    move = self.transposition_move.get(position)
+    move_score = self.transposition_score.get((position, depth, True))
+    return move, move_score.lower
+  
+  def iterative_deepening_mtdi(self, position: Position, root: bool, max_depth):
+    guess = 0
+    move_score = None
+    move = None
+    for depth in range(1, max_depth):
+      lower, upper = -MATE_UPPER, MATE_UPPER
+      while True:
+        beta = (lower+upper+1)//2 #binary search between values of beta to accomodate for value functions that return floats
+        move, guess = self.alpha_beta_zero_window(position, True, beta, depth)
+        if guess < beta:
+          upper = guess
+        else:
+          lower = guess
+        if lower >= upper - 10: #have some level of error for the search
+          break
+
+      self.alpha_beta_zero_window(position, True, lower, depth) # call to always fail high to get a move if it's out of the tp
+      
+      #if time is up: break
+    move = self.transposition_move.get(position)
+    move_score = self.transposition_score.get((position, depth, True))
+    return move, move_score.lower
 
   
 
