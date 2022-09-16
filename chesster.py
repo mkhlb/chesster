@@ -611,7 +611,7 @@ class TranspositionOptimizedSearcher():
     move_score = None
     move = None
     start = time.time()
-    for depth in range(1, max_depth):
+    for depth in range(1, max_depth + 1):
       lower, upper = -MATE_UPPER, MATE_UPPER
       while True:
         beta = (lower+upper+1)//2 #binary search between values of beta to accomodate for value functions that return floats
