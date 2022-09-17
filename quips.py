@@ -4,7 +4,7 @@ openers_mickey = ('I looked forward in time, I saw 4e37 futures. You win none of
   "I'm Chesster. This will be light work.",
   "I'm Chesster. This will be easy."
   )
-openers_profane = ("What's up fuckface, I'm Chesster. This will be light work.")
+openers_profane = ("What's up fuckface, I'm Chesster. This will be light work.",)
 
 after_my_move_mickey = ("I'm 6 moves ahead of you", "Freelo", 'Ok wait this is kind of easy can you start trying?',
   '/checkmate', '/capture queen', '/promote pawn', '/check', '/clear e', '/clear g', '/en_passant',
@@ -13,7 +13,7 @@ after_my_move_profane = ('I checkmate your mother!', 'Bitch')
 
 take_piece_mickey = (
   'Noob down.', ':]', 'HeeHeeHeeHaw!', 'Thanks.', 'Nice move!', 'Yeah okay I\'m better.', 'Ez', 'lol', 'lmao', 'ROFL', 'Get merked', 'Wow.', 'ez',
-  'too ez', 'lol mickey mouse game', 'okay now THIS is ez', 'simple', 'light work.', 'Awww, for me? You didnt have to!',
+  'too ez', 'lol mickey mouse game', 'okay now THIS is ez', 'simple', 'light work.', 'Awww, for me? You didnt have to!', 'ur mom',
   '''⠀⠀⠀⠀⠀⠀⠀⢀⡔⠋⢉⠩⡉⠛⠛⠛⠉⣉⣉⠒⠒⡦⣄⠀⠀⠀⠀⠀⠀⠀
    ⠀⠀⠀⠀⠀⠀⢀⠎⠀⠀⠠⢃⣉⣀⡀⠂⠀⠀⠄⠀⠀⠀⠀⢱⠀⠀⠀⠀⠀⠀ 
    ⠀⠀⠀⠀⠀⡰⠟⣀⢀⣒⠐⠛⡛⠳⢭⠆⠀⠤⡶⠿⠛⠂⠀⢈⠳⡀⠀⠀⠀⠀ 

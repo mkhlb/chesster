@@ -21,7 +21,7 @@ from loggering import *
 
 from utils import WHITE, BLACK, Unbuffered
 
-profane = False
+profane = True
 
 
 
@@ -59,6 +59,7 @@ def main():
   
   pos = utils.parseFEN(utils.FEN_INITIAL)
   # searcher=chesster.Searcher()
+  color = WHITE
   searcher=chesster.TranspositionOptimizedSearcher()
   our_time, opp_time = 1000, 1000
   show_thinking = True
@@ -210,6 +211,7 @@ def main():
       depth = 1000
       movetime = -1
       fallbacktime = -1
+      movesremain = 45
       our_time = None
       _, *params = smove.split(' ')
       for param, val in zip(*2*(iter(params),)):
@@ -218,11 +220,13 @@ def main():
         if param == 'movetime':
           movetime = int(val)
         if param == 'wtime':
-          our_time = int(val)
+          if color is WHITE: our_time = int(val)
         if param == 'btime':
-          opp_time = int(val)
+          if color is BLACK: our_time = int(val)
         if param == 'fallbacktime':
           fallbacktime = int(val)
+        if param == 'movesremain':
+          movesremain = int(val)
         
       start = time.time()
 
@@ -246,7 +250,7 @@ def main():
       if our_time == None:
         our_time = fallbacktime
 
-      move, score = searcher.iterative_deepening_mtdi(pos, True, depth, our_time / 30)
+      move, score = searcher.iterative_deepening_mtdi(pos, True, depth, our_time / movesremain)
       after = time.perf_counter()
 
       estimated_score =  score - pos.score
