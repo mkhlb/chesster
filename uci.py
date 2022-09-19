@@ -250,7 +250,7 @@ def main():
       if our_time == None:
         our_time = fallbacktime
 
-      move, score = searcher.iterative_deepening_mtdi(pos, True, depth, our_time / movesremain)
+      move, score, upper = searcher.iterative_deepening_mtdi(pos, True, depth, our_time / movesremain)
       after = time.perf_counter()
 
       estimated_score =  score - pos.score
@@ -288,7 +288,7 @@ def main():
 
       output('info teehee')
 
-      if score < -chesster.MATE_LOWER and game_id:
+      if score - depth < -chesster.MATE_UPPER and game_id:
         resign(game_id)
       else:
         output('bestmove ' + utils.mrender(pos, move))
