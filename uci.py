@@ -81,6 +81,8 @@ def main():
   lose_piece_specific = None
   lose_to_piece = None
 
+  move_history = set()
+
   while True:
     if stack:
       smove = stack.pop()
@@ -171,12 +173,22 @@ def main():
       
       last_move = None
       last_position = None
+      move_history = []
+      idx = -1
       for move in moveslist:
+        idx += 1
         parse = utils.mparse(color, move)
+        
         last_move = parse
         last_position = pos
         pos = pos.move(parse)
+        if move_history.__contains__(pos):
+          pass
+        else: move_history.append(pos)
         color = 1 - color
+      
+
+      move_history = set(move_history)
 
       if last_move and game_id:
         #funny quip time!
@@ -249,7 +261,7 @@ def main():
       if our_time == None:
         our_time = fallbacktime
 
-      move, score, upper = searcher.iterative_deepening_mtdbi(pos, True, depth, our_time / movesremain)
+      move, score, upper = searcher.iterative_deepening_mtdbi(pos, True, depth, our_time / movesremain, history=move_history)
       after = time.perf_counter()
 
       estimated_score =  score - pos.score

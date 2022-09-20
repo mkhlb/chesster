@@ -425,16 +425,20 @@ class TranspositionOptimizedSearcher():
     return best_score, king_take_global
 
   #alpha beta but alpha == beta
-  def alpha_beta_zero_window(self, position: Position, root: bool, gamma, depth):
+  def alpha_beta_zero_window(self, position: Position, root: bool, gamma, depth, history=()):
     
     depth = max(depth, 0)
 
     if depth == 0:
       #return self.quiesce_zero_window(position, gamma)
-      return self.quiesce_zero_window(position, gamma)
+      return self.quiesce_zero_window(position, gamma, history=history)
 
     if position.score <= -MATE_LOWER:
       return -MATE_UPPER - depth, False
+
+    #CHECK FOR DRAWS
+    if not root and position in history:
+      return 0, False
 
     entry = self.transposition_score.get((position, depth, root), Entry(-MATE_UPPER, MATE_UPPER))
     if entry.lower >= gamma and (not root or self.transposition_move.get(position) is not None):
@@ -452,19 +456,19 @@ class TranspositionOptimizedSearcher():
     def moves():
 
       if not root and any(c in position.board for c in 'RBNQ'):
-        score, mate = self.alpha_beta_zero_window(position.nullmove(), False, 1-gamma, depth-3)
+        score, mate = self.alpha_beta_zero_window(position.nullmove(), False, 1-gamma, depth-3, history=history)
         yield None, -score
 
       killer = self.transposition_move.get(position)
       if killer:
-        score, mate = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1) #-(gamma - 1)
+        score, mate = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1, history=history) #-(gamma - 1)
         if check and position.board[killer[0]] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
           pass
         else: yield killer, -score
         
       
       for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-        score, mate = self.alpha_beta_zero_window(position.move(move), False, 1-gamma, depth - 1)
+        score, mate = self.alpha_beta_zero_window(position.move(move), False, 1-gamma, depth - 1, history=history)
         score = score
         if check and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
           pass
@@ -500,9 +504,13 @@ class TranspositionOptimizedSearcher():
     
 
 
-  def quiesce_zero_window(self, position : Position, gamma):
+  def quiesce_zero_window(self, position : Position, gamma, history=()):
     if position.score <= -MATE_LOWER:
       return -MATE_UPPER, False
+
+    #CHECK FOR DRAWS
+    if position in history:
+      return 0, False
     
     entry = self.transposition_score.get((position, 0, False), Entry(-MATE_UPPER, MATE_UPPER))
     if entry.lower >= gamma:
@@ -519,7 +527,7 @@ class TranspositionOptimizedSearcher():
 
       killer = self.transposition_move.get(position)
       if killer and position.board[killer[1]].islower():
-        score, mate = self.quiesce_zero_window(position.move(killer), 1-gamma) #-(gamma - 1)
+        score, mate = self.quiesce_zero_window(position.move(killer), 1-gamma, history=history) #-(gamma - 1)
         if check and position.board[killer[0]] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
           pass
         else: yield killer, -score
@@ -527,7 +535,7 @@ class TranspositionOptimizedSearcher():
       for move in sorted(position.gen_moves(), key=position.value, reverse=True):
         #if position.board[move[1]].islower(): 
         if position.value(move) >= 200:
-          score, mate = self.quiesce_zero_window(position.move(move), 1-gamma)
+          score, mate = self.quiesce_zero_window(position.move(move), 1-gamma, history=history)
           if check and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
             pass
           else: yield move, -score
@@ -611,7 +619,7 @@ class TranspositionOptimizedSearcher():
     move_score = self.transposition_score.get((position, depth, True))
     return move, move_score.lower
   
-  def iterative_deepening_mtdbi(self, position: Position, root: bool, max_depth, movetime):
+  def iterative_deepening_mtdbi(self, position: Position, root: bool, max_depth, movetime, history=()):
     guess = 0
     move_score = None
     move = None
@@ -622,7 +630,7 @@ class TranspositionOptimizedSearcher():
       lower, upper = -MATE_UPPER, MATE_UPPER
       while True:
         beta = (lower+upper+1)//2 #binary search between values of beta to accomodate for value functions that return floats
-        guess = self.alpha_beta_zero_window(position, True, beta, depth)
+        guess = self.alpha_beta_zero_window(position, True, beta, depth, history=history)
         if guess < beta:
           upper = guess
         else:
@@ -630,7 +638,7 @@ class TranspositionOptimizedSearcher():
         if lower >= upper - 10: #have some level of error for the search
           break
 
-      self.alpha_beta_zero_window(position, True, lower, depth) # call to always fail high to get a move if it's out of the tp
+      self.alpha_beta_zero_window(position, True, lower, depth, history=history) # call to always fail high to get a move if it's out of the tp
       
       output('info depth {} timeleft {}'.format(depth, movetime - 1000 * (time.time() - start)))
       finaldepth = depth
