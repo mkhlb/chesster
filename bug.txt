@@ -14,3 +14,15 @@ TRIES TO CASTLE
 position startpos moves b1c3 g8f6 g1f3 b8c6 e2e4 e7e6 f1b5 f8b4 d2d3 d7d5 b5c6 b7c6 f3e5 b4c3 b2c3 d5e4 e5c6 d8d5 d3e4 d5e4
 
 go wtime 678950 btime 617580 winc 3000 binc 3000 depth 2
+
+
+GOES G4E5 AND LETS HIS KING AND ROOK GET FORKED, should go e8d8, SHOULD EVEN WORK ON DEPTH 2, TESTED ON DEPTH 8
+
+position startpos moves b1c3 g8f6 g1f3 b8c6 d2d4 d7d5 f3e5 c6e5 d4e5 f6g4 d1d5 d8d5 c3d5
+
+go wtime 648360 btime 699250 winc 3000 binc 3000 depth 2
+
+
+position fen 3K4/8/3P1N2/8/4B3/2kq4/8/8 b - - 0 1
+
+go wtime 648360 btime 699250 winc 3000 binc 3000 depth 2

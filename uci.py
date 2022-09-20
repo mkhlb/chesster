@@ -246,11 +246,10 @@ def main():
       before = time.perf_counter()
       # if our_time < 180000: #5 mins
       #   depth -= 1
-      print(our_time == None)
       if our_time == None:
         our_time = fallbacktime
 
-      move, score, upper = searcher.iterative_deepening_mtdi(pos, True, depth, our_time / movesremain)
+      move, score, upper = searcher.iterative_deepening_mtdbi(pos, True, depth, our_time / movesremain)
       after = time.perf_counter()
 
       estimated_score =  score - pos.score
