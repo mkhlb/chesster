@@ -301,6 +301,7 @@ def main():
 
       if score - depth < -chesster.MATE_UPPER and game_id:
         resign(game_id)
+        break
       else:
         output('bestmove ' + utils.mrender(pos, move))
 

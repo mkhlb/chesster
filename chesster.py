@@ -127,6 +127,12 @@ MATE_UPPER = piece['K'] + 10*piece['Q']
 # CHESS GAME
 #------------------------------------------------------------
 
+def calculate_phase(remaining_pieces):
+  e = 2.718
+  phase = min(max(1-(1/(1+e**(.2*(-remaining_pieces+16))) * 1.5 - .25), 0), 1)
+  return phase
+  pos = Position()
+
 class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant')):
   def gen_moves(self): #returns moves in format (start pos, end pos)
     for i, p in enumerate(self.board):
