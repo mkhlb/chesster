@@ -21,7 +21,7 @@ from loggering import *
 
 from utils import WHITE, BLACK, Unbuffered
 
-profane = True
+profane = False
 
 
 
