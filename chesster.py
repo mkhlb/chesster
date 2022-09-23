@@ -16,6 +16,8 @@ import utils
 
 piece = { 'P': 136, 'N': 782, 'B': 830, 'R': 1289, 'Q': 2529, 'K':42000}
 
+
+
 piece_square_tables = {
   'P' : ( 0, 0, 0, 0, 0, 0, 0, 0, # Last rank, no pawns
           15, 31, 20, 14, 23, 11, 37, 24, #
@@ -71,6 +73,26 @@ piece_square_tables = {
           27, 30, 24, 18, 18, 24, 30, 27, #
           27, 32, 27, 19, 19, 27, 32, 27,) #1
 #          A    B    C    D    E    F    G    H
+}
+
+piece_square_tables = {
+  'B' : ( (-34, -32), (-1, -29), (-10, -26), (-16, -17), (-16, -17), (-10, -26), (-1, -29), (-34, -32),
+          (-12, -22), (-10, -14), (4, -1), (0, 1), (0, 1), (4, -1), (-10, -14), (-12, -22),
+          (), (), (), (), (), (), (), (),
+          (), (), (), (), (), (), (), (),
+          (), (), (), (), (), (), (), (),
+          (), (), (), (), (), (), (), (),
+          (), (), (), (), (), (), (), (),
+          (), (), (), (), (), (), (), (),),
+  
+  'N' : ( (-201, -100), (-84, -88), (-56, -56), (-26, -17), (-26, -17), (-56, -56), (-84, -88), (-201, -100),
+          (-77, -67), (-41, -54), (-27,-18), (-15,8), (-15,8), (-27,-18), (-41,-54), (-77,-67),
+          (-9,-51), (22,-44), (58,-16), (53,17), (53,17), (58,-16), (22,-44), (-9,-51),
+          (-34,-45), (13,-16), (44,9), (51,39), (51,39), (44,9), (13,-16), (-34,-45),
+          (-35,-35), (8,-2), (40,13), (49,28), (49,28), (40,13), (8,-2), (-35,-36),
+          (-61,-40), (-17,-27), (6,-8), (12,29), (12,29), (6,-8), (-17,-27), (-61,-40),
+          (-77,-67), (-41,-54), (-27,-18), (-15,8), (-15,8), (-27,-18), (-41,-54), (-77,-67),
+          (-175,-96), (-92,-65), (-74,-49), (-73,-21), (-73,-21), (-74,-49), (-92,-65), (-175,-96),)
 }
 
 # pad tables and add material value to pst dicts
@@ -131,9 +153,11 @@ def calculate_phase(remaining_pieces):
   e = 2.718
   phase = min(max(1-(1/(1+e**(.2*(-remaining_pieces+16))) * 1.5 - .25), 0), 1)
   return phase
-  pos = Position()
 
-class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant')):
+class Score(namedtuple('Score', 'combined incremental revisionary piece_info')):
+  pass
+
+class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant, remaining_pieces')):
   def gen_moves(self): #returns moves in format (start pos, end pos)
     for i, p in enumerate(self.board):
       if not p.isupper(): continue
@@ -154,50 +178,34 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
             # Castling, by sliding the rook next to the king
             if i == A1 and self.board[j+E] == 'K' and self.white_castle[0]: yield (j+E, j+W)
             if i == H1 and self.board[j+W] == 'K' and self.white_castle[1]: yield (j+W, j+E)
-    # For each piece, iterate through their directions and break based on captures or instantly for knights and pawns
-    # for start_pos, piece in enumerate(self.board):
-    #   if not piece.isupper(): continue
-    #   for direction in directions[piece]:
-    #     for end_pos in count(start_pos + direction, direction):
-    #       end_space = self.board[end_pos]
-    #       # Stay inside board and off friends
-    #       if end_space.isspace() or end_space.isupper(): break
-    #       # Pawn move double move and capture
-    #       if piece == 'P' and direction in (N, N+N) and end_space != '.': break
-    #       if piece == 'P' and direction == N+N and (start_pos < A1 + N or self.board[start_pos + N] != '.'): break
-    #       if piece == 'P' and direction in (N+E, N+W) and end_space == '.' and end_pos not in (self.en_passant, self.king_passant, self.king_passant-1, self.king_passant+1): break
-    #       # Yield move to generator
-    #       yield (start_pos, end_pos)
-    #       # Stop moves that only move once from flying
-    #       if piece in 'PNK' or end_space.islower(): break
-    #       # Castling, detected by rook movements, executed by moving king
-    #       if start_pos == A1 and self.board[end_pos + E] == 'K' and self.white_castle[0] and self.board[end_pos + W] == '.': yield (end_pos+E, end_pos+W)
-    #       if start_pos == H1 and self.board[end_pos + W] == 'K' and self.white_castle[1] and self.board[end_pos + E] == '.': yield (end_pos+W, end_pos+E)
-
+    
   def rotate(self):
     ''' flips board, maintains enpassant '''
     return Position(
       self.board[::-1].swapcase(), -self.score, self.black_castle, self.white_castle, 
       119-self.en_passant if self.en_passant else 0, 
-      119-self.king_passant if self.king_passant else 0
+      119-self.king_passant if self.king_passant else 0,
+      self.remaining_pieces
     )
 
   def nullmove(self):
     ''' Like rotate, but clear passant '''
     return Position(
       self.board[::-1].swapcase(), -self.score,
-      self.black_castle, self.white_castle, 0, 0
+      self.black_castle, self.white_castle, 0, 0, self.remaining_pieces
     )
 
   def move(self, move):
     start_pos, end_pos = move
     piece, capture = self.board[start_pos], self.board[end_pos]
     put = lambda board, start_pos, piece: board[:start_pos] + piece + board[start_pos+1:]
+
+    remaining_pieces = self.remaining_pieces if capture == '.' else self.remaining_pieces - 1
     
     # Copy variables and reset ep and kp
     board = self.board
     white_castle, black_castle, en_passant, king_passant = self.white_castle, self.black_castle, 0, 0
-    score = self.score + self.value(move)
+    score = self.score + self.lazy_value(move)
     
     # Update board
     board = put(board, end_pos, board[start_pos])
@@ -222,12 +230,13 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
       if end_pos - start_pos == N+N: en_passant = start_pos + N
       if end_pos == self.en_passant: board = put(board, end_pos + S, '.')
     
-    return Position(board, score, white_castle, black_castle, en_passant, king_passant).rotate()
+    return Position(board, score, white_castle, black_castle, en_passant, king_passant, remaining_pieces).rotate() #remaining pieces is updated in the value function
   
   #returns value +/- as result of move
-  def value(self, move):
+  def lazy_value(self, move):
     start_pos, end_pos = move
     piece, capture = self.board[start_pos], self.board[end_pos]
+
     # Actual move
     score = piece_square_tables[piece][end_pos] - piece_square_tables[piece][start_pos]
     # WHEN IMPLEMENTED TABLES FOR POSITIONS DO THAT HERE
@@ -246,6 +255,18 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
         score += piece_square_tables['P'][119-(end_pos + S)]
 
     return score
+
+  def lazy_value(self, move):
+    start_pos, end_pos = move
+    piece, capture = self.board[start_pos], self.board[end_pos]
+
+    remaining_pieces = self.remaining_pieces if capture == '.' else self.remaining_pieces - 1
+
+  def midgame_value(self, move):
+    pass
+  
+  def endgame_value(self, move):
+    pass
 
 class Searcher():
   def __init__(self):
@@ -369,67 +390,6 @@ class TranspositionOptimizedSearcher():
     self.history = set()
     self.nodes = 0
 
-  def alpha_beta_memory(self, position : Position, root: bool, alpha=-MATE_UPPER, beta=MATE_UPPER, depth=8):
-    
-    
-    
-    
-    # if already searched this just use the computed score
-    entry = self.transposition_score.get((position, depth, root), Entry(-MATE_UPPER, MATE_UPPER))
-    if entry.lower >= beta and (not root or self.transposition_move.get(position) is not None):
-      return entry.lower
-    elif entry.upper <= alpha:
-      return entry.upper
-
-    if depth == 0:
-      return self.quiesce(position, alpha, beta)
-
-    best_score = -MATE_UPPER
-
-    king_take_global = False
-
-    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      king_take = False
-      if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
-        logging.debug('taking k with ' + position.board[move[0]])
-        score = MATE_UPPER + depth # mates that take longer worth less
-        king_take = True
-        #score = -position.move(move).score
-      else: 
-        score, mate = self.alpha_beta_memory(position.move(move), False, -beta, -alpha, depth - 1)
-        score = -score
-        if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
-          pass
-      if score >= beta:
-        # if root: return move, beta, ()
-        #return beta, king_take
-        if root: 
-          best_move = move
-          self.transposition_move[position] = move
-        alpha = beta
-        king_take_global = king_take
-        break
-      if score > best_score:
-        king_take_global = king_take
-        if root: 
-          best_move = move
-          self.transposition_move[position] = move
-        best_score = score
-        if score > alpha:
-          alpha = score
-    
-    if len(self.transposition_score) > TABLE_SIZE: self.transposition_score.clear()
-
-    if best_score <= alpha:
-      self.transposition_score[position, depth, root] = Entry(entry.lower, best_score)
-    if beta > best_score > alpha: # found accurate minmax, this will never occur with zero window (alpha and beta are the same)
-      self.transposition_score[position, depth, root] = Entry(best_score, best_score)
-    if best_score >= beta:
-      self.transposition_score[position, depth, root] = Entry(best_score, entry.upper)
-    
-    if root: return best_move, best_score, ()
-    return best_score, king_take_global
-
   #alpha beta but alpha == beta
   def alpha_beta_zero_window(self, position: Position, root: bool, gamma, depth, history=()):
     
@@ -440,34 +400,34 @@ class TranspositionOptimizedSearcher():
       return self.quiesce_zero_window(position, gamma, history=history)
 
     if position.score <= -MATE_LOWER:
-      return -MATE_UPPER - depth, False
+      return -MATE_UPPER - depth
 
     #CHECK FOR DRAWS
     if not root and position in history:
-      return 0, False
+      return 0
 
     entry = self.transposition_score.get((position, depth, root), Entry(-MATE_UPPER, MATE_UPPER))
     if entry.lower >= gamma and (not root or self.transposition_move.get(position) is not None):
       if root: return entry.lower
-      else: return entry.lower, False
+      else: return entry.lower
     elif entry.upper < gamma:
       if root: return entry.upper
-      else: return entry.upper, False
+      else: return entry.upper
 
     best_score = -MATE_UPPER
     rotated = position.nullmove()
-    check = any(rotated.value(m) >= MATE_LOWER for m in rotated.gen_moves())
+    check = any(rotated.lazy_value(m) >= MATE_LOWER for m in rotated.gen_moves())
 
     # generator of moves to search
     def moves():
 
       if not root and any(c in position.board for c in 'RBNQ'):
-        score, mate = self.alpha_beta_zero_window(position.nullmove(), False, 1-gamma, depth-3, history=history)
+        score = self.alpha_beta_zero_window(position.nullmove(), False, 1-gamma, depth-3, history=history)
         yield None, -score
 
       killer = self.transposition_move.get(position)
       if killer:
-        score, mate = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1, history=history) #-(gamma - 1)
+        score = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1, history=history) #-(gamma - 1)
         if check and position.board[killer[0]] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
           pass
         else: yield killer, -score
@@ -492,7 +452,7 @@ class TranspositionOptimizedSearcher():
         break
 
     if best_score < gamma and best_score < 0:
-      is_dead = lambda position: any(position.value(m) >= MATE_LOWER for m in position.gen_moves())
+      is_dead = lambda position: any(position.lazy_value(m) >= MATE_LOWER for m in position.gen_moves())
       if all(is_dead(position.move(m)) for m in position.gen_moves()):
         in_check = is_dead(position.nullmove())
         best_score = -MATE_UPPER - depth if in_check else 0
@@ -504,44 +464,45 @@ class TranspositionOptimizedSearcher():
     else:
       self.transposition_score[position, depth, root] = Entry(entry.lower, best_score) #fail low
     
-    if root: return best_score
-    else: return best_score, False
+    return best_score
+
 
     
 
 
   def quiesce_zero_window(self, position : Position, gamma, history=()):
+    
     if position.score <= -MATE_LOWER:
-      return -MATE_UPPER, False
+      return -MATE_UPPER
 
     #CHECK FOR DRAWS
     if position in history:
-      return 0, False
+      return 0
     
     entry = self.transposition_score.get((position, 0, False), Entry(-MATE_UPPER, MATE_UPPER))
     if entry.lower >= gamma:
-      return entry.lower, False
+      return entry.lower
     elif entry.upper < gamma:
-      return entry.upper, False
+      return entry.upper
 
     best_score = -MATE_UPPER
     rotated = position.nullmove()
-    check = any(rotated.value(m) >= MATE_LOWER for m in rotated.gen_moves())
+    check = any(rotated.lazy_value(m) >= MATE_LOWER for m in rotated.gen_moves())
 
     def moves(): #FIXME IF IN CHECK WHEN QUISCENCE HAPPENS BUT THERE ARE NO TAKES TO GET OUT OF THAT CHECK, THEN EVALUATION STOPS, IN CASE OF A FORK YOU WANT TO GO A LEVEL DEEPER
       yield None, position.score
 
       killer = self.transposition_move.get(position)
       if killer and position.board[killer[1]].islower():
-        score, mate = self.quiesce_zero_window(position.move(killer), 1-gamma, history=history) #-(gamma - 1)
+        score = self.quiesce_zero_window(position.move(killer), 1-gamma, history=history) #-(gamma - 1)
         if check and position.board[killer[0]] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
           pass
         else: yield killer, -score
       
       for move in sorted(position.gen_moves(), key=position.value, reverse=True):
         #if position.board[move[1]].islower(): 
-        if position.value(move) >= 200:
-          score, mate = self.quiesce_zero_window(position.move(move), 1-gamma, history=history)
+        if position.lazy_value(move) >= 200:
+          score = self.quiesce_zero_window(position.move(move), 1-gamma, history=history)
           if check and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
             pass
           else: yield move, -score
@@ -564,40 +525,8 @@ class TranspositionOptimizedSearcher():
     else:
       self.transposition_score[position, 0, False] = Entry(entry.lower, best_score) #fail low
     
-    return best_score, False
+    return best_score
 
-    
-
-
-  def quiesce(self, position : Position, alpha, beta):
-    stand_pat = position.score
-    if stand_pat >= beta:
-      return beta, False
-    if alpha < stand_pat:
-      alpha = stand_pat
-
-    king_take_global = False
-
-    for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      king_take = False
-      if not position.board[move[1]].islower():
-        continue
-      if position.board[move[1]] == 'k': 
-        score = -position.move(move).score # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
-        king_take = True
-      else: 
-        score, mate = self.quiesce(position.move(move), -beta, -alpha)
-        score = -score
-        if mate and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
-          pass
-      if score >= beta:
-        alpha=beta
-        king_take_global=king_take
-        break
-      if score > alpha:
-        alpha = score
-        king_take_global=king_take
-    return alpha, king_take_global
 
   def iterative_deepening_mtdf(self, position : Position, root : bool, max_depth, movetime):
     guess = 0
