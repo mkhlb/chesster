@@ -188,10 +188,10 @@ def main():
         print(pos.board_print())
         if move_history.__contains__(pos):
           pass
-        else: move_history.append(pos)
+        else: move_history.append(pos.board_print())
         color = 1 - color
       
-
+      
       move_history = set(move_history)
 
       if last_move and game_id:

@@ -181,7 +181,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
   def rotate(self):
     ''' flips board, maintains enpassant '''
     return Position(
-      self.board_swapcase(self.board), -self.score, self.black_castle, self.white_castle, 
+      self.board_swapcase(self.board[::-1]), -self.score, self.black_castle, self.white_castle, 
       119-self.en_passant if self.en_passant else 0, 
       119-self.king_passant if self.king_passant else 0,
       self.remaining_pieces
@@ -190,7 +190,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
   def nullmove(self):
     ''' Like rotate, but clear passant '''
     return Position(
-      self.board_swapcase(self.board), -self.score,
+      self.board_swapcase(self.board[::-1]), -self.score,
       self.black_castle, self.white_castle, 0, 0, self.remaining_pieces
     )
 
@@ -403,13 +403,13 @@ class TranspositionOptimizedSearcher():
 
     if position.score <= -MATE_LOWER:
       return -MATE_UPPER - depth
-
+    board_string = position.board_print()
     #CHECK FOR DRAWS
-    if not root and position in history:
+    if not root and board_string in history:
       return 0
 
-    entry = self.transposition_score.get((position, depth, root), Entry(-MATE_UPPER, MATE_UPPER))
-    if entry.lower >= gamma and (not root or self.transposition_move.get(position) is not None):
+    entry = self.transposition_score.get((board_string, depth, root), Entry(-MATE_UPPER, MATE_UPPER))
+    if entry.lower >= gamma and (not root or self.transposition_move.get(board_string) is not None):
       if root: return entry.lower
       else: return entry.lower
     elif entry.upper < gamma:
@@ -429,7 +429,7 @@ class TranspositionOptimizedSearcher():
             score = self.alpha_beta_zero_window(position.nullmove(), False, 1-gamma, depth-3, history=history)
             yield None, -score
 
-      killer = self.transposition_move.get(position)
+      killer = self.transposition_move.get(board_string)
       if killer:
         score = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1, history=history) #-(gamma - 1)
         if check and position.board[killer[0]]['piece'] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
@@ -451,7 +451,7 @@ class TranspositionOptimizedSearcher():
         
         if len(self.transposition_move) > TABLE_SIZE: self.transposition_move.clear()
         
-        self.transposition_move[position] = move
+        self.transposition_move[board_string] = move
         
         break
 
@@ -464,9 +464,9 @@ class TranspositionOptimizedSearcher():
     if len(self.transposition_score) > TABLE_SIZE: self.transposition_score.clear()
 
     if best_score >= gamma:
-      self.transposition_score[position, depth, root] = Entry(best_score, entry.upper) #fail high
+      self.transposition_score[board_string, depth, root] = Entry(best_score, entry.upper) #fail high
     else:
-      self.transposition_score[position, depth, root] = Entry(entry.lower, best_score) #fail low
+      self.transposition_score[board_string, depth, root] = Entry(entry.lower, best_score) #fail low
     
     return best_score
 
@@ -479,11 +479,12 @@ class TranspositionOptimizedSearcher():
     if position.score <= -MATE_LOWER:
       return -MATE_UPPER
 
+    board_string = position.board_print()
     #CHECK FOR DRAWS
-    if position in history:
+    if board_string in history:
       return 0
     
-    entry = self.transposition_score.get((position, 0, False), Entry(-MATE_UPPER, MATE_UPPER))
+    entry = self.transposition_score.get((board_string, 0, False), Entry(-MATE_UPPER, MATE_UPPER))
     if entry.lower >= gamma:
       return entry.lower
     elif entry.upper < gamma:
@@ -496,7 +497,7 @@ class TranspositionOptimizedSearcher():
     def moves(): #FIXME IF IN CHECK WHEN QUISCENCE HAPPENS BUT THERE ARE NO TAKES TO GET OUT OF THAT CHECK, THEN EVALUATION STOPS, IN CASE OF A FORK YOU WANT TO GO A LEVEL DEEPER
       yield None, position.score
 
-      killer = self.transposition_move.get(position)
+      killer = self.transposition_move.get(board_string)
       if killer and position.board[killer[1]]['piece'].islower():
         score = self.quiesce_zero_window(position.move(killer), 1-gamma, history=history) #-(gamma - 1)
         if check and position.board[killer[0]]['piece'] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
@@ -518,16 +519,16 @@ class TranspositionOptimizedSearcher():
         
         if len(self.transposition_move) > TABLE_SIZE: self.transposition_move.clear()
         
-        self.transposition_move[position] = move
+        self.transposition_move[board_string] = move
         
         break
     
     if len(self.transposition_score) > TABLE_SIZE: self.transposition_score.clear()
 
     if best_score >= gamma:
-      self.transposition_score[position, 0, False] = Entry(best_score, entry.upper) #fail high
+      self.transposition_score[board_string, 0, False] = Entry(best_score, entry.upper) #fail high
     else:
-      self.transposition_score[position, 0, False] = Entry(entry.lower, best_score) #fail low
+      self.transposition_score[board_string, 0, False] = Entry(entry.lower, best_score) #fail low
     
     return best_score
 
@@ -554,8 +555,8 @@ class TranspositionOptimizedSearcher():
       #if time is up: break
       if movetime > 0 and (time.time() - start) * 1000 > movetime: break
 
-    move = self.transposition_move.get(position)
-    move_score = self.transposition_score.get((position, depth, True))
+    move = self.transposition_move.get(position.board_print())
+    move_score = self.transposition_score.get((position.board_print(), depth, True))
     return move, move_score.lower
   
   def iterative_deepening_mtdbi(self, position: Position, root: bool, max_depth, movetime, history=()):
@@ -584,8 +585,8 @@ class TranspositionOptimizedSearcher():
 
       #if time is up: break
       if movetime > 0 and (time.time() - start) * 1000 > movetime: break
-    move = self.transposition_move.get(position)
-    move_score = self.transposition_score.get((position, finaldepth, True))
+    move = self.transposition_move.get(position.board_print())
+    move_score = self.transposition_score.get((position.board_print(), finaldepth, True))
     return move, move_score.lower, move_score.upper
 
   
