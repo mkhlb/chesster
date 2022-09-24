@@ -1,3 +1,4 @@
+from copy import deepcopy
 from itertools import count
 from collections import namedtuple
 import time
@@ -76,7 +77,6 @@ piece_square_tables = {
 
 # pad tables and add material value to pst dicts
 for k, table in piece_square_tables.items():
-  print(piece[k])
   padrow = lambda row: (0,) + tuple((x[0] + piece[k][0], x[1] + piece[k][1]) for x in row) + (0,)
   piece_square_tables[k] = sum((padrow(table[i*8:i*8+8]) for i in range(8)), ())
   piece_square_tables[k] = (0,)*20 + piece_square_tables[k] + (0,)*20
@@ -110,6 +110,13 @@ def board_string_to_dictionary(initial):
     # new.append(piece_string_to_dictionary(piece if piece != '\n' else ' '))
     new.append(piece_string_to_dictionary(piece))
   return new
+
+
+def board_swapcase(swap):
+  ret = deepcopy(swap)
+  for idx, space in enumerate(ret):
+    ret[idx]['piece'] = space['piece'].swapcase()
+  return ret
 # Compass directions as relative indexes in string
 N, E, S, W = -10, 1, 10, -1
 # List of all directions white pieces can move
@@ -145,32 +152,27 @@ class Score(namedtuple('Score', 'combined incremental revisionary piece_info')):
 def piece_string_to_dictionary(piece):
   return {'piece': piece,}
 
-class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant, remaining_pieces')):
+class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant remaining_pieces')):
   def gen_moves(self): #returns moves in format (start pos, end pos)
     for i, p in enumerate(self.board):
-      if not p.isupper(): continue
-      for d in directions[p]:
+      if not p['piece'].isupper(): continue
+      for d in directions[p['piece']]:
         for j in count(i+d, d):
             q = self.board[j]['piece']
             # Stay inside the board, and off friendly pieces
             if q.isspace() or q.isupper(): break
             # Pawn move, double move and capture
-            if p == 'P' and d in (N, N+N) and q != '.': break
-            if p == 'P' and d == N+N and (i < A1+N or self.board[i+N]['piece'] != '.'): break
-            if p == 'P' and d in (N+W, N+E) and q == '.' \
+            if p['piece'] == 'P' and d in (N, N+N) and q != '.': break
+            if p['piece'] == 'P' and d == N+N and (i < A1+N or self.board[i+N]['piece'] != '.'): break
+            if p['piece'] == 'P' and d in (N+W, N+E) and q == '.' \
                 and j not in (self.en_passant, self.king_passant, self.king_passant-1, self.king_passant+1): break
             # Move it
             yield (i, j)
             # Stop crawlers from sliding, and sliding after captures
-            if p in 'PNK' or q.islower(): break
+            if p['piece'] in 'PNK' or q.islower(): break
             # Castling, by sliding the rook next to the king
             if i == A1 and self.board[j+E]['piece'] == 'K' and self.white_castle[0]: yield (j+E, j+W)
             if i == H1 and self.board[j+W]['piece'] == 'K' and self.white_castle[1]: yield (j+W, j+E)
-
-  def board_swapcase(self, board):
-    for idx, space in enumerate(board):
-      board[idx]['piece'] = space['piece'].swapcase()
-    return board
   
   def board_print(self):
     print_string = ''
@@ -181,7 +183,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
   def rotate(self):
     ''' flips board, maintains enpassant '''
     return Position(
-      self.board_swapcase(self.board[::-1]), -self.score, self.black_castle, self.white_castle, 
+      board_swapcase(self.board[::-1]), -self.score, self.black_castle, self.white_castle, 
       119-self.en_passant if self.en_passant else 0, 
       119-self.king_passant if self.king_passant else 0,
       self.remaining_pieces
@@ -190,7 +192,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
   def nullmove(self):
     ''' Like rotate, but clear passant '''
     return Position(
-      self.board_swapcase(self.board[::-1]), -self.score,
+      board_swapcase(self.board[::-1]), -self.score,
       self.black_castle, self.white_castle, 0, 0, self.remaining_pieces
     )
 
@@ -202,7 +204,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
     remaining_pieces = self.remaining_pieces if capture == '.' else self.remaining_pieces - 1
     
     # Copy variables and reset ep and kp
-    board = self.board
+    board = deepcopy(self.board)
     white_castle, black_castle, en_passant, king_passant = self.white_castle, self.black_castle, 0, 0
     score = self.score + self.lazy_value(move)
     
@@ -396,6 +398,7 @@ class TranspositionOptimizedSearcher():
   def alpha_beta_zero_window(self, position: Position, root: bool, gamma, depth, history=()):
     
     depth = max(depth, 0)
+    
 
     if depth == 0:
       #return self.quiesce_zero_window(position, gamma)
@@ -437,8 +440,8 @@ class TranspositionOptimizedSearcher():
         else: yield killer, -score
         
       
-      for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-        score, mate = self.alpha_beta_zero_window(position.move(move), False, 1-gamma, depth - 1, history=history)
+      for move in sorted(position.gen_moves(), key=position.lazy_value, reverse=True):
+        score = self.alpha_beta_zero_window(position.move(move), False, 1-gamma, depth - 1, history=history)
         score = score
         if check and position.board[move[0]]['piece'] == 'K' and abs(move[0]-move[1]) == 2:
           pass
@@ -454,6 +457,8 @@ class TranspositionOptimizedSearcher():
         self.transposition_move[board_string] = move
         
         break
+    
+
 
     if best_score < gamma and best_score < 0:
       is_dead = lambda position: any(position.lazy_value(m) >= MATE_LOWER for m in position.gen_moves())
@@ -475,7 +480,6 @@ class TranspositionOptimizedSearcher():
 
 
   def quiesce_zero_window(self, position : Position, gamma, history=()):
-    
     if position.score <= -MATE_LOWER:
       return -MATE_UPPER
 
@@ -504,7 +508,7 @@ class TranspositionOptimizedSearcher():
           pass
         else: yield killer, -score
       
-      for move in sorted(position.gen_moves(), key=position.value, reverse=True):
+      for move in sorted(position.gen_moves(), key=position.lazy_value, reverse=True):
         #if position.board[move[1]].islower(): 
         if position.lazy_value(move) >= 200:
           score = self.quiesce_zero_window(position.move(move), 1-gamma, history=history)

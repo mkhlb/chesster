@@ -26,3 +26,10 @@ go wtime 648360 btime 699250 winc 3000 binc 3000 depth 2
 position fen 3K4/8/3P1N2/8/4B3/2kq4/8/8 b - - 0 1
 
 go wtime 648360 btime 699250 winc 3000 binc 3000 depth 2
+
+
+
+
+initlist = board_string_to_dictionary(initial)
+pos = Position(initlist, 0, (False, False), (False, False), 0, 0, 20)
+board_swapcase(initlist)
