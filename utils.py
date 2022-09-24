@@ -22,7 +22,7 @@ def can_kill_king(pos):
 # Parse and Render positions
 ################################################################################
 
-def mrender(pos, m):
+def mrender(pos, m, color):
   p = 'q' if chesster.A8 <= m[1] <= chesster.H8 and pos.board[m[0]] == 'P' else ''
   m = m if get_color(pos) == WHITE else (119-m[0], 119-m[1])
   return chesster.render(m[0]) + chesster.render(m[1]) + p
@@ -30,10 +30,11 @@ def mrender(pos, m):
 def mparse(color, move):
   m = (chesster.parse(move[0:2]), chesster.parse(move[2:4]))
   return m if color == WHITE else (119-m[0], 119-m[1])
+  
 
 def get_color(pos):
   ''' A slightly hacky way to to get the color from a chesster position '''
-  return BLACK if pos.board.startswith('\n') else WHITE
+  return BLACK if pos.board[0]['piece'] == '\n' else WHITE
 
 def parseFEN(fen):
   """ Parses a string in Forsyth-Edwards Notation into a Position """
@@ -46,6 +47,9 @@ def parseFEN(fen):
   #if color == 'w': board[::10] = ['\n']*12
   #if color == 'b': board[9::10] = ['\n']*12
   board = ''.join(board)
+
+  remaining_pieces = sum(board.count(s) for s in 'PNBRQK')
+
   wc = ('Q' in castling, 'K' in castling)
   bc = ('k' in castling, 'q' in castling)
   
@@ -53,7 +57,7 @@ def parseFEN(fen):
   # score = sum(chesster.pst[p][i] for i,p in enumerate(board) if p.isupper())
   # score -= sum(chesster.pst[p.upper()][119-i] for i,p in enumerate(board) if p.islower())
   score = 0
-  pos = chesster.Position(board, score, wc, bc, ep, 0)
+  pos = chesster.Position(chesster.board_string_to_dictionary(board), score, wc, bc, ep, 0, remaining_pieces)
   return pos if color == 'w' else pos.rotate()
 
 ################################################################################

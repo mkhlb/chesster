@@ -14,90 +14,70 @@ import utils
 # PIECE VALUES
 #------------------------------------------------------------
 
-piece = { 'P': 136, 'N': 782, 'B': 830, 'R': 1289, 'Q': 2529, 'K':42000}
-
+piece = { 'P': (136, 140), 'N': (782, 770), 'B': (830, 840), 'R': (1289, 1310), 'Q': (2529, 2529), 'K':(43000, 43000)}
 
 
 piece_square_tables = {
-  'P' : ( 0, 0, 0, 0, 0, 0, 0, 0, # Last rank, no pawns
-          15, 31, 20, 14, 23, 11, 37, 24, #
-          -1, -3, 15, 26, 1, 10, -7, -9, #
-          8, -1, -5, 13, 24, 11, -10, 3, #
-          -9, -18, 8, 32, 43, 25, -4, -16, #
-          -9, -13, -40, 22, 26, -40, 1, -22, #
-          2, 0, 15, 3, 11, 22, 11, -1, #
-          0, 0, 0, 0, 0, 0, 0, 0,),#1
-#          A    B    C    D    E    F    G    H
-  'B' : ( -48, -3, -12, -25, -25, -12, -3, -48, #
-          -21, -19, 10, -6, -6, 10, -19, -21, #
-          -17, 4, -1, 8, 8, -1, 4, -17, #
-          -7, 30, 23, 28, 28, 23, 30, -7, #
-          1, 8, 26, 37, 37, 26, 8, 1, #
-          -8, 24, -3, 15, 15, -3, 24, -8, #
-          -18, 7, 14, 3, 3, 14, 7, -18, #
-          -44, -4, -11, -28, -28, -11, -4, -44,),#1
-#          A    B    C    D    E    F    G    H
-  'R' : ( -22, -24, -6, 4, 4, -6, -24, -22, #
-          -8, 6, 10, 12, 12, 10, 6, -8, #
-          -24, -4, 4, 10, 10, 4, -4, -24, #
-          -24, -12, -1, 6, 6, -1, -12, -24, #
-          -13, -5, -4, -6, -6, -4, -5, -13, #
-          -21, -7, 3, -1, -1, 3, -7, -21, #
-          -18, -10, -5, 9, 9, -5, -10, -18, #
-          -24, -13, -7, 2, 2, -7, -13, -24,),#1
-#          A    B    C    D    E    F    G    H
-  'N' : ( -200, -80, -53, -32, -32, -53, -80, -200, #
-          -67, -21, 6, 37, 37, 6, -21, -67, #
-          -11, 28, 63, 55, 55, 63, 28, -11, #
-          -29, 13, 42, 52, 52, 42, 13, -29, #
-          -28, 5, 41, 47, 47, 41, 5, -28, #
-          -64, -20, 4, 19, 19, 4, -20, -64, #
-          -79, -39, -24, -9, -9, -24, -39, -79, #
-          -169, -96, -80, -79, -79, -80, -96, -169,),#1
-#          A    B    C    D    E    F    G    H
-  'Q' : ( -2, -2, 1, -2, -2, 1, -2, -2, #
-          -5, 6, 10, 8, 8, 10, 6, -5, #
-          -4, 10, 6, 8, 8, 6, 10, -4, #
-          0, 14, 12, 5, 5, 12, 14, 0, #
-          4, 5, 9, 8, 8, 9, 5, 4, #
-          -3, 6, 13, 7, 7, 13, 6, -3, #
-          -3, 5, 8, 12, 12, 8, 5, -3, #
-          3, -5, -5, 4, 4, -5, -5, 3,),#1
-#          A    B    C    D    E    F    G    H
-  'K' : ( 6, 8, 4, 0, 0, 4, 8, 6, #
-          8, 12, 6, 2, 2, 6, 12, 8, #
-          12, 15, 8, 3, 3, 8, 15, 12, #
-          14, 17, 11, 6, 6, 11, 17, 15, #
-          16, 19, 13, 10, 10, 13, 19, 16, #
-          19, 25, 16, 12, 12, 16, 25, 19, #
-          27, 30, 24, 18, 18, 24, 30, 27, #
-          27, 32, 27, 19, 19, 27, 32, 27,) #1
-#          A    B    C    D    E    F    G    H
-}
+  'P' : ( (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0),
+          (-7,-1), (6,-14), (-2,13), (-11,22), (4,24), (-14,17), (10,7), (-9,7),
+          (3,27), (-11,18), (-6,19), (22,29), (-8,30), (-5,9), (-14,8), (-11,14),
+          (11,12), (-4,6), (-11,2), (2,-6), (11,-5), (0,-4), (-12,14), (5,9),
+          (-3,7), (-20,1), (8,-8), (19,-2), (39,-14), (17,-13), (2,-11), (-5,-6),
+          (-9,-9), (-15,-7), (11,-10), (15,5), (31,2), (23,3), (6,-8), (-20,-5),
+          (2,-8), (4,-6), (11,9), (18,5), (16,16), (21,6), (9,-6), (-3,-18),
+          (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0),),
 
-piece_square_tables = {
   'B' : ( (-34, -32), (-1, -29), (-10, -26), (-16, -17), (-16, -17), (-10, -26), (-1, -29), (-34, -32),
           (-12, -22), (-10, -14), (4, -1), (0, 1), (0, 1), (4, -1), (-10, -14), (-12, -22),
-          (), (), (), (), (), (), (), (),
-          (), (), (), (), (), (), (), (),
-          (), (), (), (), (), (), (), (),
-          (), (), (), (), (), (), (), (),
-          (), (), (), (), (), (), (), (),
-          (), (), (), (), (), (), (), (),),
+          (-11,-21), (4,4), (1,3), (8,4), (8,4), (1,3), (4,4), (-11,-21),
+          (-8,-12), (20,-1), (15,-10), (22,11), (22,11), (15,-10), (20,-1), (-8,-12),
+          (-4,-14), (8,-4), (18,0), (27,12), (27,12), (18,0), (8,-4), (-4,-14),
+          (-5,-11), (15,-1), (-4,-1), (12,7), (12,7), (-4,-1), (15,-1), (-5,-11),
+          (-11,-26), (6,-9), (13,-12), (3,1), (3,1), (13,-12), (6,-9), (-11,-26),
+          (-37,-40), (-4,-21), (-6,-26), (-16,-8), (-16,-8), (-6,-26), (-4,-21), (-37,-40),),
   
   'N' : ( (-201, -100), (-84, -88), (-56, -56), (-26, -17), (-26, -17), (-56, -56), (-84, -88), (-201, -100),
-          (-77, -67), (-41, -54), (-27,-18), (-15,8), (-15,8), (-27,-18), (-41,-54), (-77,-67),
+          (-67,-69), (-27,-50), (4,-51), (37,12), (37,12), (4,-51), (-27,-50), (-67,-69),
           (-9,-51), (22,-44), (58,-16), (53,17), (53,17), (58,-16), (22,-44), (-9,-51),
           (-34,-45), (13,-16), (44,9), (51,39), (51,39), (44,9), (13,-16), (-34,-45),
           (-35,-35), (8,-2), (40,13), (49,28), (49,28), (40,13), (8,-2), (-35,-36),
           (-61,-40), (-17,-27), (6,-8), (12,29), (12,29), (6,-8), (-17,-27), (-61,-40),
           (-77,-67), (-41,-54), (-27,-18), (-15,8), (-15,8), (-27,-18), (-41,-54), (-77,-67),
-          (-175,-96), (-92,-65), (-74,-49), (-73,-21), (-73,-21), (-74,-49), (-92,-65), (-175,-96),)
+          (-175,-96), (-92,-65), (-74,-49), (-73,-21), (-73,-21), (-74,-49), (-92,-65), (-175,-96),),
+
+  'R' : ( (-17,-18), (-19,0), (-1,19), (9,13), (9,13), (-1,19), (-19,0), (-17,-18),
+          (-2,4), (12,5), (16,20), (18,-5), (18,-5), (16,20), (12,5), (-2,4),
+          (-22,6), (-2,1), (6,-7), (12,10), (12,10), (6,-7), (-2,1), (-22,6),
+          (-27,-5), (-15,8), (-4,7), (3,-6), (3,-6), (-4,7), (-15,8), (-27,-5),
+          (-13,-6), (-5,1), (-4,-9), (-6,7), (-6,7), (-4,-9), (-5,1), (-13,-6),
+          (-25,6), (-11,-8), (-1,-2), (3,-6), (3,-6), (-1,-2), (-11,-8), (-25,6),
+          (-21,-12), (-13,-9), (-8,-1), (6,-2), (6,-2), (-8,-1), (-13,-9), (-21,-12),
+          (-31,-9), (-20,-13), (-14,-10), (-5,-9), (-5,-9), (-14,-10), (-20,-13), (-31,-9),),
+
+  'Q' : ( (-2,-74), (-2,-52), (1,-43), (-2,-34), (-2,-34), (1,-43), (-2,-52), (-2,-74),
+          (-5,-50), (6,-27), (10,-24), (8,-8), (8,-8), (10,-24), (6,-27), (-5,-50),
+          (-4,-38), (10,-18), (6,-11), (8,1), (8,1), (6,-11), (10,-18), (-4,-38),
+          (0,-29), (14,-6), (12,9), (5,21), (5,21), (11,9), (14,-6), (0,-29),
+          (4,-23), (5,-3), (9,13), (8,24), (8,24), (9,13), (5,-3), (4,-13),
+          (-3,-39), (6,-18), (13,-9), (7,3), (7,3), (13,-9), (6,-18), (-3,-39),
+          (-3,-54), (5,-31), (8,-22), (12,-4), (12,-4), (8,-22), (5,-31), (-3,-54),
+          (3,-69), (-5,-57), (-5,-47), (4,-26), (4,-26), (-5,-47), (-5,-57), (3,-69),),
+
+  'K' : ( (59,11), (89,59), (45,73), (-1,78), (-1,78), (45,73), (89,59), (59,11),
+          (88,47), (120,121), (65,116), (33,131), (33,131), (65,116), (120,121), (88,47),
+          (123,92), (145,172), (81,184), (31,191), (31,191), (81,184), (145,172), (123,92),
+          (154,96), (179,166), (105,199), (70,199), (70,199), (105,199), (179,166), (154,96),
+          (164,103), (190,156), (138,172), (98,172), (98,172), (138,172), (190,156), (164,103),
+          (195,88), (258,130), (169,169), (120,175), (120,175), (169,169), (258,130), (195,88),
+          (278,53), (303,100), (234,133), (179,135), (179,135), (234,133), (303,100), (278,53),
+          (271,1), (327,45), (271,85), (198,76), (198,76), (271,85), (327,45), (271,1),),
+  
 }
 
 # pad tables and add material value to pst dicts
 for k, table in piece_square_tables.items():
-  padrow = lambda row: (0,) + tuple(x+piece[k] for x in row) + (0,)
+  print(piece[k])
+  padrow = lambda row: (0,) + tuple((x[0] + piece[k][0], x[1] + piece[k][1]) for x in row) + (0,)
   piece_square_tables[k] = sum((padrow(table[i*8:i*8+8]) for i in range(8)), ())
   piece_square_tables[k] = (0,)*20 + piece_square_tables[k] + (0,)*20
 
@@ -111,20 +91,25 @@ for k, table in piece_square_tables.items():
 # Having each line 10 long allows easy up and down by adding or subtracting 10 from index
 A1, H1, A8, H8 = 91, 98, 21, 28
 initial = (
-  '         \n'  #   0 -  9
-  '         \n'  #  10 - 19
-  ' rnbqkbnr\n'  #  20 - 29
-  ' pppppppp\n'  #  30 - 39
-  ' ........\n'  #  40 - 49
-  ' ........\n'  #  50 - 59
-  ' ........\n'  #  60 - 69
-  ' ........\n'  #  70 - 79
-  ' PPPPPPPP\n'  #  80 - 89
-  ' RNBQKBNR\n'  #  90 - 99
-  '         \n'  # 100 -109
-  '         \n'  # 110 -119
+  '          '  #   0 -  9
+  '          '  #  10 - 19
+  ' rnbqkbnr '  #  20 - 29
+  ' pppppppp '  #  30 - 39
+  ' ........ '  #  40 - 49
+  ' ........ '  #  50 - 59
+  ' ........ '  #  60 - 69
+  ' ........ '  #  70 - 79
+  ' PPPPPPPP '  #  80 - 89
+  ' RNBQKBNR '  #  90 - 99
+  '          '  # 100 -109
+  '          '  # 110 -119
 )
-
+def board_string_to_dictionary(initial):
+  new = []
+  for idx, piece in enumerate(initial, 0):
+    # new.append(piece_string_to_dictionary(piece if piece != '\n' else ' '))
+    new.append(piece_string_to_dictionary(piece))
+  return new
 # Compass directions as relative indexes in string
 N, E, S, W = -10, 1, 10, -1
 # List of all directions white pieces can move
@@ -142,8 +127,8 @@ directions = {
 # 8 queens up, but we got the king, we still exceed MATE_VALUE.
 # When a MATE is detected, we'll set the score to MATE_UPPER - plies to get there
 # E.g. Mate in 3 will be MATE_UPPER - 6
-MATE_LOWER = piece['K'] - 10*piece['Q']
-MATE_UPPER = piece['K'] + 10*piece['Q']
+MATE_LOWER = piece['K'][1] - 10*piece['Q'][1]
+MATE_UPPER = piece['K'][1] + 10*piece['Q'][1]
 
 #------------------------------------------------------------
 # CHESS GAME
@@ -157,18 +142,21 @@ def calculate_phase(remaining_pieces):
 class Score(namedtuple('Score', 'combined incremental revisionary piece_info')):
   pass
 
+def piece_string_to_dictionary(piece):
+  return {'piece': piece,}
+
 class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant, remaining_pieces')):
   def gen_moves(self): #returns moves in format (start pos, end pos)
     for i, p in enumerate(self.board):
       if not p.isupper(): continue
       for d in directions[p]:
         for j in count(i+d, d):
-            q = self.board[j]
+            q = self.board[j]['piece']
             # Stay inside the board, and off friendly pieces
             if q.isspace() or q.isupper(): break
             # Pawn move, double move and capture
             if p == 'P' and d in (N, N+N) and q != '.': break
-            if p == 'P' and d == N+N and (i < A1+N or self.board[i+N] != '.'): break
+            if p == 'P' and d == N+N and (i < A1+N or self.board[i+N]['piece'] != '.'): break
             if p == 'P' and d in (N+W, N+E) and q == '.' \
                 and j not in (self.en_passant, self.king_passant, self.king_passant-1, self.king_passant+1): break
             # Move it
@@ -176,13 +164,24 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
             # Stop crawlers from sliding, and sliding after captures
             if p in 'PNK' or q.islower(): break
             # Castling, by sliding the rook next to the king
-            if i == A1 and self.board[j+E] == 'K' and self.white_castle[0]: yield (j+E, j+W)
-            if i == H1 and self.board[j+W] == 'K' and self.white_castle[1]: yield (j+W, j+E)
+            if i == A1 and self.board[j+E]['piece'] == 'K' and self.white_castle[0]: yield (j+E, j+W)
+            if i == H1 and self.board[j+W]['piece'] == 'K' and self.white_castle[1]: yield (j+W, j+E)
+
+  def board_swapcase(self, board):
+    for idx, space in enumerate(board):
+      board[idx]['piece'] = space['piece'].swapcase()
+    return board
+  
+  def board_print(self):
+    print_string = ''
+    for space in self.board:
+      print_string += space['piece']
+    return print_string
     
   def rotate(self):
     ''' flips board, maintains enpassant '''
     return Position(
-      self.board[::-1].swapcase(), -self.score, self.black_castle, self.white_castle, 
+      self.board_swapcase(self.board), -self.score, self.black_castle, self.white_castle, 
       119-self.en_passant if self.en_passant else 0, 
       119-self.king_passant if self.king_passant else 0,
       self.remaining_pieces
@@ -191,14 +190,14 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
   def nullmove(self):
     ''' Like rotate, but clear passant '''
     return Position(
-      self.board[::-1].swapcase(), -self.score,
+      self.board_swapcase(self.board), -self.score,
       self.black_castle, self.white_castle, 0, 0, self.remaining_pieces
     )
 
   def move(self, move):
     start_pos, end_pos = move
-    piece, capture = self.board[start_pos], self.board[end_pos]
-    put = lambda board, start_pos, piece: board[:start_pos] + piece + board[start_pos+1:]
+    piece, capture = self.board[start_pos]['piece'], self.board[end_pos]['piece']
+    put = lambda board, start_pos, piece: board[:start_pos] + [piece_string_to_dictionary(piece),] + board[start_pos+1:]
 
     remaining_pieces = self.remaining_pieces if capture == '.' else self.remaining_pieces - 1
     
@@ -208,7 +207,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
     score = self.score + self.lazy_value(move)
     
     # Update board
-    board = put(board, end_pos, board[start_pos])
+    board = put(board, end_pos, board[start_pos]['piece'])
     board = put(board, start_pos, '.')
     
     # if king or rook are moving revoke castling rights
@@ -221,7 +220,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
       white_castle = (False, False)
       if abs(end_pos - start_pos) == 2:
         king_passant = (start_pos + end_pos) // 2
-        board = put(board, A1 if end_pos < start_pos else H1, '.')
+        board = put(board, A1 if end_pos < start_pos else H1,'.')
         board = put(board, king_passant, 'R')
     
     # Pawn promotion, double move, and en passant
@@ -231,42 +230,45 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
       if end_pos == self.en_passant: board = put(board, end_pos + S, '.')
     
     return Position(board, score, white_castle, black_castle, en_passant, king_passant, remaining_pieces).rotate() #remaining pieces is updated in the value function
-  
-  #returns value +/- as result of move
-  def lazy_value(self, move):
+
+  # game stage of 0 is midgame, game stage of 1 is lategame
+  def lazy_value_phase(self, move, game_stage):
     start_pos, end_pos = move
-    piece, capture = self.board[start_pos], self.board[end_pos]
+    piece, capture = self.board[start_pos]['piece'], self.board[end_pos]['piece']
 
     # Actual move
-    score = piece_square_tables[piece][end_pos] - piece_square_tables[piece][start_pos]
+    score = piece_square_tables[piece][end_pos][game_stage] - piece_square_tables[piece][start_pos][game_stage]
     # WHEN IMPLEMENTED TABLES FOR POSITIONS DO THAT HERE
     # Capture
     if capture.islower():
-      score += piece_square_tables[capture.upper()][119-end_pos]
+      score += piece_square_tables[capture.upper()][119-end_pos][game_stage]
     # Castling
     if piece == 'K' and abs(start_pos-end_pos) == 2:
-      score += piece_square_tables['R'][(start_pos+end_pos)//2]
-      score -= piece_square_tables['R'][A1 if end_pos < start_pos else H1]
+      score += piece_square_tables['R'][(start_pos+end_pos)//2][game_stage]
+      score -= piece_square_tables['R'][A1 if end_pos < start_pos else H1][game_stage]
     
     if piece == 'P':
       if A8 <= end_pos <= H8:
-        score += piece_square_tables['Q'][end_pos] - piece_square_tables['P'][end_pos]
+        score += piece_square_tables['Q'][end_pos][game_stage] - piece_square_tables['P'][end_pos][game_stage]
       if end_pos == self.en_passant:
-        score += piece_square_tables['P'][119-(end_pos + S)]
+        score += piece_square_tables['P'][119-(end_pos + S)][game_stage]
 
     return score
 
   def lazy_value(self, move):
     start_pos, end_pos = move
-    piece, capture = self.board[start_pos], self.board[end_pos]
+    piece, capture = self.board[start_pos]['piece'], self.board[end_pos]['piece']
 
     remaining_pieces = self.remaining_pieces if capture == '.' else self.remaining_pieces - 1
 
-  def midgame_value(self, move):
-    pass
-  
-  def endgame_value(self, move):
-    pass
+    phase = calculate_phase(remaining_pieces)
+    midgame = self.lazy_value_phase(move, 0)
+    endgame = self.lazy_value_phase(move, 1)
+    score = phase * endgame + (1 - phase) * midgame
+    
+    return score
+
+
 
 class Searcher():
   def __init__(self):
@@ -283,7 +285,7 @@ class Searcher():
     if depth == 0:
       return self.quiesce(position, alpha, beta)
     for move in sorted(position.gen_moves(), key=position.value, reverse=True):
-      if position.board[move[1]] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
+      if position.board[move[1]]['piece'] == 'k': # if king is captured we dont need to go down further in the tree for trades this game is over so we are at a leaf
         logging.debug('taking k with ' + position.board[move[0]])
         score = MATE_UPPER + depth # mates that take longer worth less
         #score = -position.move(move).score
@@ -421,14 +423,16 @@ class TranspositionOptimizedSearcher():
     # generator of moves to search
     def moves():
 
-      if not root and any(c in position.board for c in 'RBNQ'):
-        score = self.alpha_beta_zero_window(position.nullmove(), False, 1-gamma, depth-3, history=history)
-        yield None, -score
+      if not root:
+        for square in position.board:
+          if square['piece'] in 'RBNQ':
+            score = self.alpha_beta_zero_window(position.nullmove(), False, 1-gamma, depth-3, history=history)
+            yield None, -score
 
       killer = self.transposition_move.get(position)
       if killer:
         score = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1, history=history) #-(gamma - 1)
-        if check and position.board[killer[0]] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
+        if check and position.board[killer[0]]['piece'] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
           pass
         else: yield killer, -score
         
@@ -436,7 +440,7 @@ class TranspositionOptimizedSearcher():
       for move in sorted(position.gen_moves(), key=position.value, reverse=True):
         score, mate = self.alpha_beta_zero_window(position.move(move), False, 1-gamma, depth - 1, history=history)
         score = score
-        if check and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+        if check and position.board[move[0]]['piece'] == 'K' and abs(move[0]-move[1]) == 2:
           pass
         else: yield move, -score
       
@@ -493,9 +497,9 @@ class TranspositionOptimizedSearcher():
       yield None, position.score
 
       killer = self.transposition_move.get(position)
-      if killer and position.board[killer[1]].islower():
+      if killer and position.board[killer[1]]['piece'].islower():
         score = self.quiesce_zero_window(position.move(killer), 1-gamma, history=history) #-(gamma - 1)
-        if check and position.board[killer[0]] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
+        if check and position.board[killer[0]]['piece'] == 'K' and abs(killer[0]-killer[1]) == 2: #if the next move is a mate and we are trying to castle cancel that shit!
           pass
         else: yield killer, -score
       
@@ -503,7 +507,7 @@ class TranspositionOptimizedSearcher():
         #if position.board[move[1]].islower(): 
         if position.lazy_value(move) >= 200:
           score = self.quiesce_zero_window(position.move(move), 1-gamma, history=history)
-          if check and position.board[move[0]] == 'K' and abs(move[0]-move[1]) == 2:
+          if check and position.board[move[0]]['piece'] == 'K' and abs(move[0]-move[1]) == 2:
             pass
           else: yield move, -score
     

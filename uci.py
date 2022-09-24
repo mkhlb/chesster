@@ -178,10 +178,14 @@ def main():
       for move in moveslist:
         idx += 1
         parse = utils.mparse(color, move)
+        print(color)
+        print(move)
+        print(parse)
         
         last_move = parse
         last_position = pos
         pos = pos.move(parse)
+        print(pos.board_print())
         if move_history.__contains__(pos):
           pass
         else: move_history.append(pos)
@@ -303,7 +307,7 @@ def main():
         resign(game_id)
         break
       else:
-        output('bestmove ' + utils.mrender(pos, move))
+        output('bestmove ' + utils.mrender(pos, move, color))
 
       # before = time.perf_counter()
       # move = searcher.search(pos, depth)
