@@ -52,10 +52,14 @@ def parseFEN(fen):
   bc = ('k' in castling, 'q' in castling)
   
   ep = chesster.parse(enpas) if enpas != '-' else 0
-  # score = sum(chesster.pst[p][i] for i,p in enumerate(board) if p.isupper())
-  # score -= sum(chesster.pst[p.upper()][119-i] for i,p in enumerate(board) if p.islower())
-  score = 0
-  pos = chesster.Position(board, score, wc, bc, ep, 0, remaining_pieces)
+  midscore = sum(chesster.piece_square_tables[p][i][0] for i,p in enumerate(board) if p.isupper())
+  endscore = sum(chesster.piece_square_tables[p][i][1] for i,p in enumerate(board) if p.isupper())
+  midscore -= sum(chesster.piece_square_tables[p.upper()][119-i][0] for i,p in enumerate(board) if p.islower())
+  endscore -= sum(chesster.piece_square_tables[p.upper()][119-i][1] for i,p in enumerate(board) if p.islower())
+  phase = chesster.calculate_phase(remaining_pieces) 
+  score = phase * endscore + (1 - phase) * midscore
+  #score = 0
+  pos = chesster.Position(board, score, score, wc, bc, ep, 0, remaining_pieces)
   return pos if color == 'w' else pos.rotate()
 
 ################################################################################

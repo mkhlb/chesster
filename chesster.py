@@ -3,6 +3,7 @@ from collections import namedtuple
 import time
 from tokenize import endpats
 from tracemalloc import start
+from turtle import pos
 
 from loggering import *
 
@@ -74,6 +75,20 @@ piece_square_tables = {
   
 }
 
+piece_mobility_bonuses = {
+  'N' : ( (-75,-76), (-56,-54), (-9,-26), (-2,-10), (6,5), (15,11), (22,26), (30,28), (36,29),),
+  'B' : ( (-48,-58), (-21,-19), ( 16, -2), ( 26, 12), ( 37, 22), ( 51, 42), ( 54, 54), ( 63, 58), 
+          ( 65, 63), ( 71, 70), ( 79, 74), ( 81, 86), ( 92, 90), ( 97, 94),),
+
+  'R' : ( (-56,-78), (-25,-18), (-11, 26), ( -5, 55), ( -4, 70), ( -1, 81), (  8,109), ( 14,120), 
+          ( 21,128), ( 23,143), ( 31,154), ( 32,160), ( 43,165), ( 49,168), ( 59,169),),
+
+  'Q' : ( (-40,-35), (-25,-12), (  2,  7), (  4, 19), ( 14, 37), ( 24, 55), ( 25, 62), ( 40, 76), 
+          ( 43, 79), ( 47, 87), ( 54, 94), ( 56,102), ( 60,111), ( 70,116), ( 72,118), ( 73,122), 
+          ( 75,128), ( 77,130), ( 85,133), ( 94,136), ( 99,140), (108,157), (112,158), (113,161),
+          (118,174), (119,177), (123,191), (128,199),),
+}
+
 # pad tables and add material value to pst dicts
 for k, table in piece_square_tables.items():
   padrow = lambda row: (0,) + tuple((x[0] + piece[k][0], x[1] + piece[k][1]) for x in row) + (0,)
@@ -133,7 +148,7 @@ def calculate_phase(remaining_pieces):
   phase = min(max(1-(1/(1+e**(.2*(-remaining_pieces+16))) * 1.5 - .25), 0), 1)
   return phase
 
-class Position(namedtuple('Position', 'board score white_castle black_castle en_passant king_passant remaining_pieces')):
+class Position(namedtuple('Position', 'board score material white_castle black_castle en_passant king_passant remaining_pieces')):
   def gen_moves(self): #returns moves in format (start pos, end pos)
     for i, p in enumerate(self.board):
       if not p.isupper(): continue
@@ -154,11 +169,26 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
             # Castling, by sliding the rook next to the king
             if i == A1 and self.board[j+E] == 'K' and self.white_castle[0]: yield (j+E, j+W)
             if i == H1 and self.board[j+W] == 'K' and self.white_castle[1]: yield (j+W, j+E)
+  #count all possible moves a piece has on a square (including captures) doesn't work for the king or pawns
+  def count_moves(self, i):
+    move_count = 0
+    p = self.board[i]
+    for d in directions[p]:
+      for j in count(i+d, d):
+        q = self.board[j]
+        # Stay inside the board, and off friendly pieces
+        if q.isspace() or q.isupper(): break
+        # Move it
+        move_count += 1
+        # Stop crawlers from sliding, and sliding after captures
+        if p == 'N' or q.islower(): break
+    return move_count
+    
 
   def rotate(self):
     ''' flips board, maintains enpassant '''
     return Position(
-      self.board[::-1].swapcase(), -self.score, self.black_castle, self.white_castle, 
+      self.board[::-1].swapcase(), -self.score, self.material, self.black_castle, self.white_castle, 
       119-self.en_passant if self.en_passant else 0, 
       119-self.king_passant if self.king_passant else 0, self.remaining_pieces
     )
@@ -166,7 +196,7 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
   def nullmove(self):
     ''' Like rotate, but clear passant '''
     return Position(
-      self.board[::-1].swapcase(), -self.score,
+      self.board[::-1].swapcase(), -self.score, self.material,
       self.black_castle, self.white_castle, 0, 0, self.remaining_pieces
     )
 
@@ -205,7 +235,22 @@ class Position(namedtuple('Position', 'board score white_castle black_castle en_
       if end_pos - start_pos == N+N: en_passant = start_pos + N
       if end_pos == self.en_passant: board = put(board, end_pos + S, '.')
     
-    return Position(board, score, white_castle, black_castle, en_passant, king_passant, remaining_pieces).rotate()
+    return Position(board, self.score, score, white_castle, black_castle, en_passant, king_passant, remaining_pieces).rotate()
+
+  #does all static score calculations
+  def get_score(self):
+    score = 0
+    midgame_score = 0
+    endgame_score = 0
+    for idx, piece in enumerate(self.board):
+      if piece in 'NBQR':
+        mobility = self.count_moves(idx)
+        midgame_score += piece_mobility_bonuses[piece][mobility][0]
+        endgame_score += piece_mobility_bonuses[piece][mobility][0]
+      
+    phase = calculate_phase(self.remaining_pieces)
+    score = endgame_score * phase + (1 - phase) * midgame_score
+    return score + self.material
   
   #returns value +/- as result of move
   def lazy_value_phase(self, move, game_stage):
@@ -435,7 +480,7 @@ class TranspositionOptimizedSearcher():
       #return self.quiesce_zero_window(position, gamma)
       return self.quiesce_zero_window(position, gamma, history=history)
 
-    if position.score <= -MATE_LOWER:
+    if position.material <= -MATE_LOWER:
       return -MATE_UPPER - depth, False
 
     #CHECK FOR DRAWS
@@ -507,7 +552,7 @@ class TranspositionOptimizedSearcher():
 
 
   def quiesce_zero_window(self, position : Position, gamma, history=()):
-    if position.score <= -MATE_LOWER:
+    if position.material <= -MATE_LOWER:
       return -MATE_UPPER, False
 
     #CHECK FOR DRAWS
@@ -525,7 +570,8 @@ class TranspositionOptimizedSearcher():
     check = any(rotated.lazy_value(m) >= MATE_LOWER for m in rotated.gen_moves())
 
     def moves(): #FIXME IF IN CHECK WHEN QUISCENCE HAPPENS BUT THERE ARE NO TAKES TO GET OUT OF THAT CHECK, THEN EVALUATION STOPS, IN CASE OF A FORK YOU WANT TO GO A LEVEL DEEPER
-      yield None, position.score
+      
+      yield None, position.material
 
       killer = self.transposition_move.get(position)
       if killer and position.board[killer[1]].islower():
