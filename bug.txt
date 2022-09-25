@@ -26,3 +26,9 @@ go wtime 648360 btime 699250 winc 3000 binc 3000 depth 2
 position fen 3K4/8/3P1N2/8/4B3/2kq4/8/8 b - - 0 1
 
 go wtime 648360 btime 699250 winc 3000 binc 3000 depth 2
+
+
+EXPECTED: e3f5
+position startpos moves f2f4 h7h6 e2e4 e7e5 g1e2 d7d6 d2d3 g7g6 g2g3 b8c6 f1g2 f8g7 e1g1 g8e7 c2c3 e8g8 b1a3 a7a5 a3c2 f7f5 c2e3 a5a4 a1b1 d8e8 c3c4 c8e6 f4e5 c6e5 e2f4 e8d7 e4f5 h6h5 f4e6 g8f7 e6f8 d7f5
+
+go wtime 575331 btime 587460 winc 3000 binc 3000 depth 6

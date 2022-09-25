@@ -46,6 +46,8 @@ def parseFEN(fen):
   #if color == 'w': board[::10] = ['\n']*12
   #if color == 'b': board[9::10] = ['\n']*12
   board = ''.join(board)
+  remaining_pieces = sum(board.count(s) for s in 'PNBRQK')
+
   wc = ('Q' in castling, 'K' in castling)
   bc = ('k' in castling, 'q' in castling)
   
@@ -53,7 +55,7 @@ def parseFEN(fen):
   # score = sum(chesster.pst[p][i] for i,p in enumerate(board) if p.isupper())
   # score -= sum(chesster.pst[p.upper()][119-i] for i,p in enumerate(board) if p.islower())
   score = 0
-  pos = chesster.Position(board, score, wc, bc, ep, 0)
+  pos = chesster.Position(board, score, wc, bc, ep, 0, remaining_pieces)
   return pos if color == 'w' else pos.rotate()
 
 ################################################################################

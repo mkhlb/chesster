@@ -29,7 +29,7 @@ def send_chat(game_id, message, room):
   url = "https://lichess.org/"
   endpoint = "/api/bot/game/{}/chat"
   header = {
-    "Authorization": f"Bearer lip_rYJV5qz8u7q0vqXFiAKy"
+    "Authorization": f"Bearer lip_lEBfFRyeKPZz2naVFbMP"
   }
   payload = {'room': room, 'text': message}
   url = urljoin(url, endpoint.format(game_id))
@@ -40,7 +40,7 @@ def resign(game_id):
   url = "https://lichess.org/"
   endpoint = "/api/bot/game/{}/resign"
   header = {
-    "Authorization": f"Bearer lip_rYJV5qz8u7q0vqXFiAKy"
+    "Authorization": f"Bearer lip_lEBfFRyeKPZz2naVFbMP"
   }
   url = urljoin(url, endpoint.format(game_id))
   response = requests.post(url, headers=header)
