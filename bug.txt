@@ -48,6 +48,25 @@ NEW POSITION PAWN E2-E4 LAZY_VALUE x8000: 0.027927637100219727
 
 time_bench(pos.lazy_value, [chess.Move.from_uci('e2e4'),], 8000)
 
-copy position x8000: 5309867858886719
+copy position x8000: 0.5309867858886719
 
 time_bench(pos.copy, [,], 8000)
+
+old chesster benchmarks:
+
+e2e4 move x1: 0.000000000000000000
+
+import chesster
+pos = chesster.Position(chesster.initial, 0, 0, None, None, None, None, 0)
+pos.move((85,75))
+time_bench(pos.move, [(85,75),])
+
+e2e4 move x8000: 0.039893150329589844
+time_bench(pos.move, [(85,75),], 8000)
+
+make new Position object x8000 : 0.0020074844360351562
+time_bench(chesster.Position, [chesster.initial, 0, 0, None, None, None, None, 0], 8000)
+
+lazy_value e2e4 x8000: 0.015988588333129883
+
+LAZY VALUE FASTER FOR NEW CHESSTER!!!11
