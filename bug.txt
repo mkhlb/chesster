@@ -40,8 +40,14 @@ import chesster
 import chess
 pos = chesster.Position()
 
-NEW POSITION PAWN E2-E4 move
+NEW POSITION PAWN E2-E4 move x8000: 0.8128495216369629
 
-time_bench(pos.move, [chess.Move.from_uci('e2e4'),])
+time_bench(pos.move, [chess.Move.from_uci('e2e4'),], 8000)
 
-NEW POSITION PAWN E2-E4 LAZY_VALUE
+NEW POSITION PAWN E2-E4 LAZY_VALUE x8000: 0.027927637100219727
+
+time_bench(pos.lazy_value, [chess.Move.from_uci('e2e4'),], 8000)
+
+copy position x8000: 5309867858886719
+
+time_bench(pos.copy, [,], 8000)
