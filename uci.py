@@ -17,6 +17,8 @@ import utils
 import chesster
 import quips
 
+import chess
+
 from loggering import *
 
 from utils import WHITE, BLACK, Unbuffered
@@ -57,7 +59,7 @@ def main():
     chesster.pst = pst_module.pst
 
   
-  pos = utils.parseFEN(utils.FEN_INITIAL)
+  pos = chesster.Position(chess.STARTING_BOARD_FEN)
   # searcher=chesster.Searcher()
   color = WHITE
   searcher=chesster.TranspositionOptimizedSearcher()
@@ -166,7 +168,7 @@ def main():
       else:
         pass
 
-      pos = utils.parseFEN(fen)
+      pos = chesster.Position(fen=fen)
       
       color = WHITE if fen.split()[1] == 'w' else BLACK
 
@@ -177,49 +179,51 @@ def main():
       idx = -1
       for move in moveslist:
         idx += 1
-        parse = utils.mparse(color, move)
+        # parse = utils.mparse(color, move)
         
-        last_move = parse
+        # last_move = parse
         last_position = pos
-        pos = pos.move(parse)
-        if move_history.__contains__(pos):
+        move = chess.Move.from_uci(move)
+        if color == BLACK:
+          move = chess.Move(chess.square_mirror(move.from_square), chess.square_mirror(move.to_square), move.promotion, move.drop)
+        pos = pos.move(move)
+        if move_history.__contains__(pos.board_fen()):
           pass
-        else: move_history.append(pos)
+        else: move_history.append(pos.board_fen())
         color = 1 - color
       
 
       move_history = set(move_history)
 
-      if last_move and game_id:
-        #funny quip time!
-        opp_move_quips = ()
-        for quip_list in after_opponent_move:
-          opp_move_quips += quip_list
-        if last_position.board[last_move[1]].islower(): #opponent has taken!
-          if estimated_score and estimated_score > 0:
-            for quip_list in lose_piece_good:
-              opp_move_quips += quip_list
-          elif estimated_score:
-            for quip_list in lose_piece_bad:
-              opp_move_quips += quip_list
-          #lost a specific piece
-          for quip_dict in lose_piece_specific:
-            if last_position.board[last_move[1]].upper() in quip_dict.keys():
-              opp_move_quips += quip_dict[last_position.board[last_move[1]].upper()]
-          #lost to specific piece
-          for quip_dict in lose_to_piece:
-            if last_position.board[last_move[0]] in quip_dict.keys():
-              opp_move_quips += quip_dict[last_position.board[last_move[0]]]
-        quip = random.choice(opp_move_quips)
-        send_chat(game_id, quip, 'player')
-        send_chat(game_id, quip, 'spectator')
+      # if last_move and game_id:
+      #   #funny quip time!
+      #   opp_move_quips = ()
+      #   for quip_list in after_opponent_move:
+      #     opp_move_quips += quip_list
+      #   if last_position.board[last_move[1]].islower(): #opponent has taken!
+      #     if estimated_score and estimated_score > 0:
+      #       for quip_list in lose_piece_good:
+      #         opp_move_quips += quip_list
+      #     elif estimated_score:
+      #       for quip_list in lose_piece_bad:
+      #         opp_move_quips += quip_list
+      #     #lost a specific piece
+      #     for quip_dict in lose_piece_specific:
+      #       if last_position.board[last_move[1]].upper() in quip_dict.keys():
+      #         opp_move_quips += quip_dict[last_position.board[last_move[1]].upper()]
+      #     #lost to specific piece
+      #     for quip_dict in lose_to_piece:
+      #       if last_position.board[last_move[0]] in quip_dict.keys():
+      #         opp_move_quips += quip_dict[last_position.board[last_move[0]]]
+      #   quip = random.choice(opp_move_quips)
+      #   send_chat(game_id, quip, 'player')
+      #   send_chat(game_id, quip, 'spectator')
             
 
       
       
 
     elif smove.startswith('go'): # make my move
-      logging.debug(pos.board)
       depth = 1000
       movetime = -1
       fallbacktime = -1
@@ -264,36 +268,32 @@ def main():
       move, score, upper = searcher.iterative_deepening_mtdbi(pos, True, depth, our_time / movesremain, history=move_history)
       after = time.perf_counter()
 
-      estimated_score =  score - pos.score
-
-      logging.debug(pos.en_passant)
-
-      logging.debug(pos.move(move).rotate().board)
+      estimated_score =  score - pos.material
 
       # if game_id and move[2]:
       #   msg = random.choice(move[2])
       #   send_chat(game_id, msg, 'player')
       #   send_chat(game_id, msg, 'spectator')
       
-      if game_id:
-        my_move_quips = ()
-        #funny quip time!
-        for quip_list in after_my_move:
-          my_move_quips += quip_list
-        if pos.board[move[1]].islower():
-          #capturing a piece!
-          for quip_list in take_piece:
-            my_move_quips += quip_list
-          for quip_dict in take_piece_specific:
-            if pos.board[move[1]].upper() in quip_dict.keys():
-              my_move_quips += quip_dict[pos.board[move[1]].upper()]
-        if score - pos.score > 200:
-          for quip_list in up_in_score:
-            my_move_quips += quip_list
+      # if game_id:
+      #   my_move_quips = ()
+      #   #funny quip time!
+      #   for quip_list in after_my_move:
+      #     my_move_quips += quip_list
+      #   if pos.piece_at(move.to_square).color == chess.BLACK:
+      #     #capturing a piece!
+      #     for quip_list in take_piece:
+      #       my_move_quips += quip_list
+      #     for quip_dict in take_piece_specific:
+      #       if pos.piece_at(move.to_square) in quip_dict.keys():
+      #         my_move_quips += quip_dict[pos.board[move[1]].upper()]
+      #   if score - pos.score > 200:
+      #     for quip_list in up_in_score:
+      #       my_move_quips += quip_list
 
-        quip = random.choice(my_move_quips)
-        send_chat(game_id, quip, 'player')
-        send_chat(game_id, quip, 'spectator')
+        # quip = random.choice(my_move_quips)
+        # send_chat(game_id, quip, 'player')
+        # send_chat(game_id, quip, 'spectator')
 
       # print('did alpha-beta in {} seconds'.format(after - before))
 
@@ -303,7 +303,7 @@ def main():
         resign(game_id)
         break
       else:
-        output('bestmove ' + utils.mrender(pos, move))
+        output('bestmove ' + pos.uci(move))
 
       # before = time.perf_counter()
       # move = searcher.search(pos, depth)
