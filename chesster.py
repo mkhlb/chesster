@@ -83,16 +83,18 @@ piece_mobility_bonuses = [
   None, #pad
   None, #pawn
   ( (-75,-76), (-56,-54), (-9,-26), (-2,-10), (6,5), (15,11), (22,26), (30,28), (36,29),), #knight
+
   ( (-48,-58), (-21,-19), ( 16, -2), ( 26, 12), ( 37, 22), ( 51, 42), ( 54, 54), ( 63, 58), 
-          ( 65, 63), ( 71, 70), ( 79, 74), ( 81, 86), ( 92, 90), ( 97, 94),), #bishop
+    ( 65, 63), ( 71, 70), ( 79, 74), ( 81, 86), ( 92, 90), ( 97, 94),), #bishop
 
   ( (-56,-78), (-25,-18), (-11, 26), ( -5, 55), ( -4, 70), ( -1, 81), (  8,109), ( 14,120), #rook
-          ( 21,128), ( 23,143), ( 31,154), ( 32,160), ( 43,165), ( 49,168), ( 59,169),),
+    ( 21,128), ( 23,143), ( 31,154), ( 32,160), ( 43,165), ( 49,168), ( 59,169),),
+  
 
   ( (-40,-35), (-25,-12), (  2,  7), (  4, 19), ( 14, 37), ( 24, 55), ( 25, 62), ( 40, 76), #queen
-          ( 43, 79), ( 47, 87), ( 54, 94), ( 56,102), ( 60,111), ( 70,116), ( 72,118), ( 73,122), 
-          ( 75,128), ( 77,130), ( 85,133), ( 94,136), ( 99,140), (108,157), (112,158), (113,161),
-          (118,174), (119,177), (123,191), (128,199),),
+    ( 43, 79), ( 47, 87), ( 54, 94), ( 56,102), ( 60,111), ( 70,116), ( 72,118), ( 73,122), 
+    ( 75,128), ( 77,130), ( 85,133), ( 94,136), ( 99,140), (108,157), (112,158), (113,161),
+    (118,174), (119,177), (123,191), (128,199),),
   None
 ]
 
@@ -144,16 +146,44 @@ def calculate_phase(remaining_pieces):
   return phase
 
 class Position(chess.Board):
-  def __init__(selfT, material=None, remaining_pieces=None, fen=chess.STARTING_BOARD_FEN) -> None:
-    super().__init__(fen)
-    if selfT.turn == chess.BLACK:
-      selfT.apply_mirror()
+  def __init__(selfT, material=None, remaining_pieces=None, fen=chess.STARTING_BOARD_FEN, quick=False) -> None:
+    if not quick: 
+      super().__init__(fen)
+      if selfT.turn == chess.BLACK:
+        selfT.apply_mirror()
+    else:
+      selfT.pawns = None
+      selfT.knights = None
+      selfT.pawns = None
+      selfT.knights = None
+      selfT.bishops = None
+      selfT.rooks = None
+      selfT.queens = None
+      selfT.kings = None
+
+      selfT.occupied_co = []
+      selfT.occupied = None
+      selfT.promoted = None
+
+      selfT.ep_square = None
+      selfT.castling_rights = None
+      selfT.turn = None
+      selfT.fullmove_number = None
+      selfT.halfmove_clock = None
+      selfT.chess960 = False
+      selfT.move_stack = []
+      selfT._stack = []
+
+      selfT.remaining_pieces = remaining_pieces
+
+      selfT.material = material
+      return
     
-    if remaining_pieces:
+    if remaining_pieces is not None:
       selfT.remaining_pieces = remaining_pieces
     else:
       selfT.remaining_pieces = len(list(selfT.pieces(p, c) for c in chess.COLORS for p in chess.PIECE_TYPES))
-    if material:
+    if material is not None:
       selfT.material = material
     else:
       midscore = sum(piece_square_tables[piece_type][i][0] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.WHITE))
@@ -164,7 +194,7 @@ class Position(chess.Board):
       selfT.material = phase * endscore + (1 - phase) * midscore
 
   def copy(self, *, stack = False):
-    board = Position(material=self.material, remaining_pieces=self.remaining_pieces)
+    board = Position(material=self.material, remaining_pieces=self.remaining_pieces, quick=True)
 
     board.pawns = self.pawns
     board.knights = self.knights
@@ -173,8 +203,9 @@ class Position(chess.Board):
     board.queens = self.queens
     board.kings = self.kings
 
-    board.occupied_co[chess.WHITE] = self.occupied_co[chess.WHITE]
-    board.occupied_co[chess.BLACK] = self.occupied_co[chess.BLACK]
+    board.occupied_co.append(self.occupied_co[chess.BLACK])
+    board.occupied_co.append(self.occupied_co[chess.WHITE])
+    
     board.occupied = self.occupied
     board.promoted = self.promoted
 
@@ -191,21 +222,24 @@ class Position(chess.Board):
     midgame_score = 0
     endgame_score = 0
     for piece_type in MAJOR_PIECE_TYPES:
-      mobility = sum(bin(self.attacks_mask(square)).count('1') for square in self.pieces(piece_type, chess.WHITE))
-      midgame_score += piece_mobility_bonuses[piece_type][mobility][0]
-      endgame_score += piece_mobility_bonuses[piece_type][mobility][1]
+      for square in self.pieces(piece_type, chess.WHITE):
+        mobility = bin(self.attacks_mask(square)).count('1')
+        midgame_score += piece_mobility_bonuses[piece_type][mobility][0]
+        endgame_score += piece_mobility_bonuses[piece_type][mobility][1]
     
     phase = calculate_phase(self.remaining_pieces)
     score = endgame_score * phase + (1 - phase) * midgame_score
     return score + self.material
 
   def move(self, move: chess.Move):
+    if self.piece_at(move.to_square) != None: self.remaining_pieces -= 1
     try:
       new = self.copy()
       
       if move != chess.Move.null(): new.material += self.lazy_value(move)
       # print(self)
       # print(move)
+      
       new.push(move)
       new.apply_mirror()
       return new
@@ -460,7 +494,7 @@ class TranspositionOptimizedSearcher():
 
     def moves(): #FIXME IF IN CHECK WHEN QUISCENCE HAPPENS BUT THERE ARE NO TAKES TO GET OUT OF THAT CHECK, THEN EVALUATION STOPS, IN CASE OF A FORK YOU WANT TO GO A LEVEL DEEPER
       
-      yield None, position.material
+      yield None, position.update_score()
 
       killer = self.transposition_move.get(position.board_fen())
       if killer and position.lazy_value(killer) >= 200:
