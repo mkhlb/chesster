@@ -39,6 +39,11 @@ new chesster benchmarks:
 import chesster
 import chess
 pos = chesster.Position()
+move = chess.Move.from_uci('e2e4')
+
+chesster.moveandpop(chess.Move.from_uci('e2e4'), pos)
+
+time_bench(chesster.moveandpop, [chess.Move.from_uci('e2e4'), pos], 8000)
 
 NEW POSITION PAWN E2-E4 move x8000: 0.20049262046813965
 
