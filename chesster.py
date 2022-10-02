@@ -16,7 +16,6 @@ import chess
 #------------------------------------------------------------
 
 
-
 piece = [ None, (136, 140), (782, 770), (830, 840), (1289, 1310), (2529, 2529), (43000, 43000)]
 
 
@@ -146,76 +145,17 @@ def calculate_phase(remaining_pieces):
   return phase
 
 class Position(chess.Board):
-  def __init__(selfT, material=None, remaining_pieces=None, fen=chess.STARTING_BOARD_FEN, quick=False) -> None:
-    if not quick: 
-      super().__init__(fen)
-      if selfT.turn == chess.BLACK:
-        selfT.apply_mirror()
-    else:
-      selfT.pawns = None
-      selfT.knights = None
-      selfT.pawns = None
-      selfT.knights = None
-      selfT.bishops = None
-      selfT.rooks = None
-      selfT.queens = None
-      selfT.kings = None
+  def __init__(selfT, fen=chess.STARTING_BOARD_FEN) -> None:
+    super().__init__(fen)
 
-      selfT.occupied_co = []
-      selfT.occupied = None
-      selfT.promoted = None
+    selfT.remaining_pieces = len(list(selfT.pieces(p, c) for c in chess.COLORS for p in chess.PIECE_TYPES))
 
-      selfT.ep_square = None
-      selfT.castling_rights = None
-      selfT.turn = None
-      selfT.fullmove_number = None
-      selfT.halfmove_clock = None
-      selfT.chess960 = False
-      selfT.move_stack = []
-      selfT._stack = []
-
-      selfT.remaining_pieces = remaining_pieces
-
-      selfT.material = material
-      return
-    
-    if remaining_pieces is not None:
-      selfT.remaining_pieces = remaining_pieces
-    else:
-      selfT.remaining_pieces = len(list(selfT.pieces(p, c) for c in chess.COLORS for p in chess.PIECE_TYPES))
-    if material is not None:
-      selfT.material = material
-    else:
-      midscore = sum(piece_square_tables[piece_type][i][0] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.WHITE))
-      endscore = sum(piece_square_tables[piece_type][i][1] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.WHITE))
-      midscore -= sum(piece_square_tables[piece_type][i][1] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.BLACK))
-      endscore -= sum(piece_square_tables[piece_type][i][1] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.BLACK))
-      phase = calculate_phase(selfT.remaining_pieces) 
-      selfT.material = phase * endscore + (1 - phase) * midscore
-
-  def copy(self, *, stack = False):
-    board = Position(material=self.material, remaining_pieces=self.remaining_pieces, quick=True)
-
-    board.pawns = self.pawns
-    board.knights = self.knights
-    board.bishops = self.bishops
-    board.rooks = self.rooks
-    board.queens = self.queens
-    board.kings = self.kings
-
-    board.occupied_co.append(self.occupied_co[chess.BLACK])
-    board.occupied_co.append(self.occupied_co[chess.WHITE])
-    
-    board.occupied = self.occupied
-    board.promoted = self.promoted
-
-    board.ep_square = self.ep_square
-    board.castling_rights = self.castling_rights
-    board.turn = self.turn
-    board.fullmove_number = self.fullmove_number
-    board.halfmove_clock = self.halfmove_clock
-
-    return board
+    midscore = sum(piece_square_tables[piece_type][i][0] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.WHITE))
+    endscore = sum(piece_square_tables[piece_type][i][1] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.WHITE))
+    midscore -= sum(piece_square_tables[piece_type][i][1] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.BLACK))
+    endscore -= sum(piece_square_tables[piece_type][i][1] for piece_type in chess.PIECE_TYPES for i in selfT.pieces(piece_type, chess.BLACK))
+    phase = calculate_phase(selfT.remaining_pieces) 
+    selfT.material = phase * endscore + (1 - phase) * midscore
   
   def update_score(self):
     score = 0
@@ -233,21 +173,12 @@ class Position(chess.Board):
 
   def move(self, move: chess.Move):
     if self.piece_at(move.to_square) != None: self.remaining_pieces -= 1
-    try:
-      new = self.copy()
-      
-      if move != chess.Move.null(): new.material += self.lazy_value(move)
-      # print(self)
-      # print(move)
-      
-      new.push(move)
-      new.apply_mirror()
-      return new
-    except AttributeError as e:
-      print(self)
-      print(move)
-      print(e)
-      quit()
+
+    if move != chess.Move.null(): self.material += self.lazy_value(move)
+    # print(self)
+    # print(move)
+    self.push(move)  
+    return self.mirror()
 
   def lazy_value_phase(self, move: chess.Move, game_stage):
     piece, capture = self.piece_at(move.from_square), self.piece_at(move.to_square)
@@ -277,6 +208,11 @@ class Position(chess.Board):
     score = phase * endgame + (1 - phase) * midgame
 
     return score
+
+def moveandpop(move, position: Position):
+  position.move(move)
+  position.pop()
+
 
 class Searcher():
   def __init__(self):
@@ -431,16 +367,19 @@ class TranspositionOptimizedSearcher():
 
       if not root and any(position.pieces(p, int(c)) != 0 for p in MAJOR_PIECE_TYPES for c in chess.COLORS):
         score = self.alpha_beta_zero_window(position.move(chess.Move.null()), False, 1-gamma, depth-3, history=history)
+        position.pop()
         yield None, -score
 
       killer = self.transposition_move.get(position.board_fen())
       if killer:
         score = self.alpha_beta_zero_window(position.move(killer), False, 1-gamma, depth - 1, history=history) #-(gamma - 1)
+        position.pop()
         yield killer, -score
         
       
       for move in sorted(position.generate_pseudo_legal_moves(), key=position.lazy_value, reverse=True):
         score = self.alpha_beta_zero_window(position.move(move), False, 1-gamma, depth - 1, history=history)
+        position.pop()
         yield move, -score
       
     for move, score in moves():
@@ -499,12 +438,14 @@ class TranspositionOptimizedSearcher():
       killer = self.transposition_move.get(position.board_fen())
       if killer and position.lazy_value(killer) >= 200:
         score = self.quiesce_zero_window(position.move(killer), 1-gamma, history=history) #-(gamma - 1)
+        position.pop()
         yield killer, -score
       
       for move in sorted(position.generate_pseudo_legal_moves(), key=position.lazy_value, reverse=True):
         #if position.board[move[1]].islower(): 
         if position.lazy_value(move) >= 200:
           score = self.quiesce_zero_window(position.move(move), 1-gamma, history=history)
+          position.pop()
           yield move, -score
     
     for move, score in moves():
